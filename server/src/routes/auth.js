@@ -1,14 +1,13 @@
 import { Router } from 'express'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
-import { OAuth2Client } from 'google-auth-library'
 import { query } from '../db/index.js'
 import { authenticate } from '../middleware/auth.js'
+import { seedDefaultCategories } from '../services/seedCategories.js'
 
 const router = Router()
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
-const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-in-production'
+const JWT_SECRET = process.env.JWT_SECRET || 'default-secret'
 const JWT_EXPIRES_IN = '7d'
 
 function generateToken(user) {
@@ -32,7 +31,6 @@ router.post('/register', async (req, res, next) => {
       return res.status(400).json({ message: 'Password must be at least 8 characters' })
     }
 
-    // Check if user exists
     const existingUser = await query(
       'SELECT id FROM users WHERE email = $1',
       [email.toLowerCase()]
@@ -42,10 +40,8 @@ router.post('/register', async (req, res, next) => {
       return res.status(409).json({ message: 'Email already registered' })
     }
 
-    // Hash password
     const passwordHash = await bcrypt.hash(password, 12)
 
-    // Create user
     const result = await query(
       `INSERT INTO users (name, email, password_hash)
        VALUES ($1, $2, $3)
@@ -54,6 +50,7 @@ router.post('/register', async (req, res, next) => {
     )
 
     const user = result.rows[0]
+    await seedDefaultCategories(user.id)
     const token = generateToken(user)
 
     res.status(201).json({
@@ -78,7 +75,6 @@ router.post('/login', async (req, res, next) => {
       return res.status(400).json({ message: 'Email and password are required' })
     }
 
-    // Find user
     const result = await query(
       'SELECT id, name, email, password_hash FROM users WHERE email = $1',
       [email.toLowerCase()]
@@ -90,10 +86,9 @@ router.post('/login', async (req, res, next) => {
 
     const user = result.rows[0]
 
-    // Check password
     if (!user.password_hash) {
       return res.status(401).json({
-        message: 'This account uses Google sign-in. Please use the Google login option.',
+        message: 'This account has no password set. Please register a new account.',
       })
     }
 
@@ -113,67 +108,6 @@ router.post('/login', async (req, res, next) => {
       token,
     })
   } catch (error) {
-    next(error)
-  }
-})
-
-// Google OAuth
-router.post('/google', async (req, res, next) => {
-  try {
-    const { credential } = req.body
-
-    if (!credential) {
-      return res.status(400).json({ message: 'Google credential is required' })
-    }
-
-    // Verify Google token
-    const ticket = await googleClient.verifyIdToken({
-      idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    })
-
-    const payload = ticket.getPayload()
-    const { sub: googleId, email, name, picture } = payload
-
-    // Check if user exists
-    let result = await query(
-      'SELECT id, name, email FROM users WHERE google_id = $1 OR email = $2',
-      [googleId, email.toLowerCase()]
-    )
-
-    let user = result.rows[0]
-
-    if (!user) {
-      // Create new user
-      result = await query(
-        `INSERT INTO users (name, email, google_id)
-         VALUES ($1, $2, $3)
-         RETURNING id, name, email`,
-        [name, email.toLowerCase(), googleId]
-      )
-      user = result.rows[0]
-    } else if (!user.google_id) {
-      // Link Google account to existing email account
-      await query(
-        'UPDATE users SET google_id = $1 WHERE id = $2',
-        [googleId, user.id]
-      )
-    }
-
-    const token = generateToken(user)
-
-    res.json({
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
-      token,
-    })
-  } catch (error) {
-    if (error.message.includes('Token used too late')) {
-      return res.status(401).json({ message: 'Google token expired' })
-    }
     next(error)
   }
 })

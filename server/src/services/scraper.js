@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio'
-import puppeteer from 'puppeteer'
+import { launchBrowser } from './browser.js'
 
 const BROWSER_HEADERS = {
   'User-Agent':
@@ -51,10 +51,7 @@ async function fetchHtml(url) {
 }
 
 async function fetchHtmlWithBrowser(url) {
-  const browser = await puppeteer.launch({
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  })
+  const browser = await launchBrowser()
 
   try {
     const page = await browser.newPage()

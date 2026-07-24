@@ -35,13 +35,6 @@ export function AuthProvider({ children }) {
     return userData
   }
 
-  const loginWithGoogle = async (credential) => {
-    const { user: userData, token } = await authService.googleLogin(credential)
-    localStorage.setItem('token', token)
-    setUser(userData)
-    return userData
-  }
-
   const logout = () => {
     localStorage.removeItem('token')
     setUser(null)
@@ -53,7 +46,6 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!user,
     login,
     register,
-    loginWithGoogle,
     logout,
   }
 

@@ -337,10 +337,14 @@ router.post('/:id/export', async (req, res, next) => {
     res.setHeader('Content-Type', 'application/pdf')
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${recipe.title.replace(/[^a-z0-9]/gi, '_')}.pdf"`
+      `attachment; filename="${String(recipe.title || 'recipe')
+        .replace(/[^a-z0-9]+/gi, '_')
+        .replace(/^_|_$/g, '') || 'recipe'}_card.pdf"`
     )
-    res.send(pdfBuffer)
+    res.setHeader('Content-Length', pdfBuffer.length)
+    res.end(pdfBuffer)
   } catch (error) {
+    console.error('PDF export error:', error)
     next(error)
   }
 })

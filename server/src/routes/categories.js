@@ -1,15 +1,17 @@
 import { Router } from 'express'
 import { query } from '../db/index.js'
 import { authenticate } from '../middleware/auth.js'
+import { seedDefaultCategories } from '../services/seedCategories.js'
 
 const router = Router()
 
-// All category routes require authentication
 router.use(authenticate)
 
-// Get all categories for current user
+// Get all categories for current user (seed defaults if empty)
 router.get('/', async (req, res, next) => {
   try {
+    await seedDefaultCategories(req.user.id)
+
     const result = await query(
       'SELECT * FROM categories WHERE user_id = $1 ORDER BY name',
       [req.user.id]

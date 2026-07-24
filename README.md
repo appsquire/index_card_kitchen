@@ -5,7 +5,7 @@ A clean, distraction-free web app for saving recipes and generating beautiful pr
 ## Features
 
 - **Save Recipes** - Import from URL (auto-extracts from Schema.org data) or manual entry
-- **Categories** - Organize recipes by custom categories
+- **Categories** - Organize recipes with built-in kitchen tabs (Breakfast, Dinner, Desserts, …)
 - **Search** - Find recipes by title or ingredients
 - **Recipe Card Export** - Generate printable PDF cards with vintage styling
 - **Local-First** - Works without an account using browser storage
@@ -16,7 +16,7 @@ A clean, distraction-free web app for saving recipes and generating beautiful pr
 - **Frontend**: React + Vite + Tailwind CSS
 - **Backend**: Node.js + Express
 - **Database**: PostgreSQL
-- **Auth**: JWT + Google OAuth (optional)
+- **Auth**: Email/password JWT (optional)
 - **PDF Generation**: Puppeteer
 
 ## Quick Start
@@ -96,7 +96,6 @@ index-card-kitchen/
 ### Authentication
 - `POST /api/auth/register` - Create account
 - `POST /api/auth/login` - Login with email/password
-- `POST /api/auth/google` - Login with Google OAuth
 - `GET /api/auth/profile` - Get current user profile
 
 ### Recipes
@@ -121,7 +120,6 @@ index-card-kitchen/
 | `DATABASE_URL` | PostgreSQL connection string | Yes |
 | `JWT_SECRET` | Secret for JWT tokens | Yes |
 | `PORT` | Server port (default: 4000) | No |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID | No |
 
 ## Recipe Import
 

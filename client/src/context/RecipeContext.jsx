@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { useAuth } from './AuthContext'
 import { localDb } from '../services/localDb'
 import { recipeApi } from '../services/api'
+import { buildDefaultCategories } from '../data/defaultCategories'
 
 const RecipeContext = createContext(null)
 
@@ -35,7 +36,7 @@ export function RecipeProvider({ children }) {
     }
   }, [isAuthenticated])
 
-  // Load categories
+  // Load categories — seed kitchen defaults if the box is empty
   const loadCategories = useCallback(async () => {
     try {
       if (isAuthenticated) {
@@ -43,7 +44,12 @@ export function RecipeProvider({ children }) {
         setCategories(cloudCategories)
         await localDb.syncCategories(cloudCategories)
       } else {
-        const localCategories = await localDb.getAllCategories()
+        let localCategories = await localDb.getAllCategories()
+        if (localCategories.length === 0) {
+          const defaults = buildDefaultCategories()
+          await localDb.syncCategories(defaults)
+          localCategories = defaults
+        }
         setCategories(localCategories)
       }
     } catch (error) {

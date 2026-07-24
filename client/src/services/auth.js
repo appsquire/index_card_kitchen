@@ -15,11 +15,6 @@ export const authService = {
     return data
   },
 
-  async googleLogin(credential) {
-    const { data } = await api.post('/google', { credential })
-    return data
-  },
-
   async getProfile() {
     const token = localStorage.getItem('token')
     const { data } = await api.get('/profile', {

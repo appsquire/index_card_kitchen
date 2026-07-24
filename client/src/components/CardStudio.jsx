@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { Printer, Download, X, RotateCcw, Check } from 'lucide-react'
 import RecipeCardPrint, { planRecipeCard } from './RecipeCardPrint'
-import BoxDropCelebration from './BoxDropCelebration'
 import { recipeApi } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
@@ -32,8 +31,6 @@ export default function CardStudio({ recipe, onClose }) {
   const [side, setSide] = useState('front')
   const [exporting, setExporting] = useState(false)
   const [toast, setToast] = useState(null)
-  const [filing, setFiling] = useState(false)
-  const [pendingAction, setPendingAction] = useState(null)
 
   const plan = useMemo(
     () => planRecipeCard(recipe, { size, layout }),
@@ -49,14 +46,14 @@ export default function CardStudio({ recipe, onClose }) {
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const onKey = (e) => {
-      if (e.key === 'Escape' && !filing) onClose()
+      if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => {
       document.body.style.overflow = prev
       window.removeEventListener('keydown', onKey)
     }
-  }, [onClose, filing])
+  }, [onClose])
 
   const showToast = (message) => {
     setToast(message)
@@ -81,29 +78,24 @@ export default function CardStudio({ recipe, onClose }) {
       const a = document.createElement('a')
       a.href = url
       a.download = `${recipe.title.replace(/[^a-z0-9]+/gi, '_')}_card.pdf`
+      a.rel = 'noopener'
+      document.body.appendChild(a)
       a.click()
+      a.remove()
       URL.revokeObjectURL(url)
       showToast(needsBack ? 'PDF ready — front & back included.' : 'PDF ready for the recipe box.')
     } catch (error) {
       console.error(error)
-      showToast('PDF export failed — try Print instead.')
+      const msg = error?.message
+      showToast(
+        msg && msg !== 'Network Error'
+          ? msg
+          : 'PDF export failed — try Print instead.'
+      )
     } finally {
       setExporting(false)
     }
   }, [recipe.id, recipe.title, size, style, layout, needsBack])
-
-  const startFiling = (action) => {
-    setPendingAction(action)
-    setFiling(true)
-  }
-
-  const handleFilingDone = useCallback(() => {
-    const action = pendingAction
-    setFiling(false)
-    setPendingAction(null)
-    if (action === 'print') runPrint()
-    if (action === 'pdf') runPdf()
-  }, [pendingAction, runPrint, runPdf])
 
   const handleExportPdf = () => {
     if (!isAuthenticated) {
@@ -114,7 +106,13 @@ export default function CardStudio({ recipe, onClose }) {
       showToast('Cloud-save this recipe first, then export PDF.')
       return
     }
-    startFiling('pdf')
+    // Export immediately — delaying behind the box animation loses the
+    // user gesture and browsers often block the download.
+    runPdf()
+  }
+
+  const handlePrint = () => {
+    runPrint()
   }
 
   const studio = (
@@ -132,7 +130,6 @@ export default function CardStudio({ recipe, onClose }) {
             onClick={onClose}
             className="btn-secondary !px-3"
             aria-label="Close"
-            disabled={filing}
           >
             <X className="w-5 h-5" />
           </button>
@@ -216,8 +213,7 @@ export default function CardStudio({ recipe, onClose }) {
             <div className="card-studio__actions">
               <button
                 type="button"
-                onClick={() => startFiling('print')}
-                disabled={filing}
+                onClick={handlePrint}
                 className="btn-primary w-full flex items-center justify-center gap-2"
               >
                 <Printer className="w-4 h-4" />
@@ -226,7 +222,7 @@ export default function CardStudio({ recipe, onClose }) {
               <button
                 type="button"
                 onClick={handleExportPdf}
-                disabled={exporting || filing}
+                disabled={exporting}
                 className="btn-secondary w-full flex items-center justify-center gap-2"
               >
                 <Download className="w-4 h-4" />
@@ -235,7 +231,6 @@ export default function CardStudio({ recipe, onClose }) {
               <button
                 type="button"
                 onClick={onClose}
-                disabled={filing}
                 className="btn-secondary w-full"
               >
                 Done
@@ -256,12 +251,16 @@ export default function CardStudio({ recipe, onClose }) {
             </div>
           </aside>
 
-          <div className="card-studio__stage">
+          <div
+            className={[
+              'card-studio__stage',
+              size === 'letter' ? 'card-studio__stage--letter' : '',
+            ].join(' ')}
+          >
             <div
               className={[
                 'card-studio__preview',
                 SIZE_PREVIEW_CLASS[size] || SIZE_PREVIEW_CLASS['4x6'],
-                filing ? 'card-studio__preview--filing' : '',
               ].join(' ')}
             >
               <RecipeCardPrint
@@ -330,10 +329,6 @@ export default function CardStudio({ recipe, onClose }) {
           </div>
         )}
       </div>
-
-      {filing && (
-        <BoxDropCelebration recipeTitle={recipe.title} onDone={handleFilingDone} />
-      )}
 
       {toast && (
         <div className="card-studio__toast no-print">

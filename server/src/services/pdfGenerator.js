@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer'
+import { launchBrowser } from './browser.js'
 
 const SIZES = {
   '4x6': { width: '6in', height: '4in', pageWidth: '6in', pageHeight: '4in' },
@@ -119,23 +119,25 @@ export async function generateRecipePdf(recipe, options = {}) {
 
   const html = generateRecipeHtml(recipe, { size, style, layout, dims, plan })
 
-  const browser = await puppeteer.launch({
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  })
+  const browser = await launchBrowser()
 
   try {
     const page = await browser.newPage()
-    await page.setContent(html, { waitUntil: 'networkidle0' })
+    await page.setContent(html, { waitUntil: 'load', timeout: 30000 })
+    await Promise.race([
+      page.evaluate(() => document.fonts.ready),
+      new Promise((r) => setTimeout(r, 1500)),
+    ]).catch(() => {})
 
     const pdfBuffer = await page.pdf({
       width: dims.pageWidth,
       height: dims.pageHeight,
       margin: { top: '0', right: '0', bottom: '0', left: '0' },
       printBackground: true,
+      preferCSSPageSize: false,
     })
 
-    return pdfBuffer
+    return Buffer.from(pdfBuffer)
   } finally {
     await browser.close()
   }
@@ -255,10 +257,12 @@ function generateRecipeHtml(recipe, { size, style, layout, dims, plan }) {
 <html>
 <head>
   <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Patrick+Hand&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Patrick+Hand&display=swap');
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Nunito', sans-serif; color: #1a1a1a; }
+    body { font-family: 'Nunito', 'Segoe UI', Tahoma, sans-serif; color: #1a1a1a; }
     .card {
       padding: 0.28in 0.32in 0.22in;
       overflow: hidden;
@@ -280,7 +284,7 @@ function generateRecipeHtml(recipe, { size, style, layout, dims, plan }) {
     }
     .header { display: flex; gap: 0.18in; align-items: flex-start; margin-bottom: 0.14in; }
     .wordmark {
-      font-family: 'Patrick Hand', cursive;
+      font-family: 'Patrick Hand', 'Segoe Print', 'Comic Sans MS', cursive;
       line-height: 0.85;
       flex-shrink: 0;
     }
@@ -302,7 +306,7 @@ function generateRecipeHtml(recipe, { size, style, layout, dims, plan }) {
     .body.split { display: grid; grid-template-columns: 0.92fr 1.08fr; gap: 0.22in; flex: 1; min-height: 0; }
     .body.stacked { display: flex; flex-direction: column; gap: 0.16in; flex: 1; min-height: 0; }
     h2 {
-      font-family: 'Patrick Hand', cursive;
+      font-family: 'Patrick Hand', 'Segoe Print', 'Comic Sans MS', cursive;
       font-size: 22px;
       font-weight: 400;
       margin-bottom: 8px;

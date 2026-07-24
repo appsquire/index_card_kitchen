@@ -79,10 +79,38 @@ export const recipeApi = {
 
   // PDF Export
   async exportPdf(recipeId, options = {}) {
-    const { data } = await api.post(`/recipes/${recipeId}/export`, options, {
-      responseType: 'blob',
-    })
-    return data
+    try {
+      const { data } = await api.post(`/recipes/${recipeId}/export`, options, {
+        responseType: 'blob',
+        timeout: 120000,
+      })
+
+      // Axios gives error bodies as blobs when responseType is blob
+      if (data?.type && data.type.includes('application/json')) {
+        const text = await data.text()
+        let message = 'PDF export failed'
+        try {
+          message = JSON.parse(text).message || message
+        } catch {
+          /* ignore */
+        }
+        throw new Error(message)
+      }
+
+      return data
+    } catch (error) {
+      const blob = error.response?.data
+      if (blob instanceof Blob) {
+        try {
+          const text = await blob.text()
+          const parsed = JSON.parse(text)
+          throw new Error(parsed.message || 'PDF export failed')
+        } catch (inner) {
+          if (inner.message && inner.message !== 'PDF export failed') throw inner
+        }
+      }
+      throw error
+    }
   },
 }
 
