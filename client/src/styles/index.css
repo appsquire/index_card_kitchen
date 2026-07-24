@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-cream text-brown-800 font-serif;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-rust text-white px-4 py-2 rounded-lg hover:bg-orange-700
+           transition-colors duration-200 font-medium;
+  }
+
+  .btn-secondary {
+    @apply bg-cream-dark text-brown-700 px-4 py-2 rounded-lg
+           hover:bg-brown-100 transition-colors duration-200 border border-brown-200;
+  }
+
+  .card {
+    @apply bg-white rounded-lg shadow-card p-6 border border-brown-100;
+  }
+
+  .card-hover {
+    @apply hover:shadow-card-hover transition-shadow duration-200;
+  }
+
+  .input {
+    @apply w-full px-4 py-2 border border-brown-200 rounded-lg
+           focus:ring-2 focus:ring-rust focus:border-transparent
+           outline-none transition-all duration-200 bg-white;
+  }
+
+  .recipe-card {
+    @apply bg-cream-dark border-2 border-brown-300 rounded-sm p-6
+           shadow-md relative;
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 27px,
+        #E1D0B8 28px
+      );
+    background-position: 0 1.2em;
+  }
+
+  .recipe-card-title {
+    @apply font-serif text-2xl text-brown-800 border-b-2 border-brown-300
+           pb-2 mb-4;
+  }
+}
+
+/* Print styles for recipe cards */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .recipe-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
