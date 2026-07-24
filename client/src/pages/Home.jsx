@@ -41,7 +41,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-rust border-t-transparent"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gingham border-t-transparent"></div>
       </div>
     )
   }
@@ -49,7 +49,7 @@ export default function Home() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <h1 className="text-3xl font-serif font-bold text-brown-800">
+        <h1 className="text-3xl font-serif font-bold text-wicker-800">
           My Recipes
         </h1>
         <Link to="/recipe/new" className="btn-primary flex items-center gap-2 justify-center">
@@ -68,11 +68,11 @@ export default function Home() {
         <div className="text-center py-16">
           {recipes.length === 0 ? (
             <>
-              <BookOpen className="w-16 h-16 mx-auto text-brown-300 mb-4" />
-              <h2 className="text-xl font-serif text-brown-700 mb-2">
+              <BookOpen className="w-16 h-16 mx-auto text-wicker-300 mb-4" />
+              <h2 className="text-xl font-serif text-wicker-700 mb-2">
                 No recipes yet
               </h2>
-              <p className="text-brown-500 mb-6">
+              <p className="text-wicker-500 mb-6">
                 Start building your recipe collection
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -86,10 +86,10 @@ export default function Home() {
             </>
           ) : (
             <>
-              <h2 className="text-xl font-serif text-brown-700 mb-2">
+              <h2 className="text-xl font-serif text-wicker-700 mb-2">
                 No recipes found
               </h2>
-              <p className="text-brown-500">
+              <p className="text-wicker-500">
                 Try adjusting your search or filters
               </p>
             </>
@@ -97,7 +97,7 @@ export default function Home() {
         </div>
       ) : (
         <>
-          <p className="text-sm text-brown-500 mb-4">
+          <p className="text-sm text-wicker-500 mb-4">
             {filteredRecipes.length} recipe{filteredRecipes.length !== 1 ? 's' : ''}
             {searchQuery && ` matching "${searchQuery}"`}
             {selectedCategory && categories.find(c => c.id === selectedCategory) &&

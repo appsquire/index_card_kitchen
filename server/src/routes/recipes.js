@@ -6,7 +6,38 @@ import { generateRecipePdf } from '../services/pdfGenerator.js'
 
 const router = Router()
 
-// All recipe routes require authentication
+// Import from URL - no auth required (just scrapes, doesn't save)
+router.post('/import', async (req, res, next) => {
+  try {
+    const { url } = req.body
+
+    if (!url) {
+      return res.status(400).json({ message: 'URL is required' })
+    }
+
+    const recipeData = await scrapeRecipe(url)
+
+    if (!recipeData) {
+      return res.status(400).json({
+        message: 'Could not extract recipe data from this URL',
+      })
+    }
+
+    res.json(recipeData)
+  } catch (error) {
+    console.error('Import error:', error)
+    if (error.message.includes('fetch') || error.message.includes('timeout')) {
+      return res.status(400).json({
+        message: 'Could not access the URL. Please check the link and try again.',
+      })
+    }
+    return res.status(400).json({
+      message: error.message || 'Failed to import recipe',
+    })
+  }
+})
+
+// All other recipe routes require authentication
 router.use(authenticate)
 
 // Get all recipes for current user
@@ -269,33 +300,6 @@ router.delete('/:id', async (req, res, next) => {
   }
 })
 
-// Import recipe from URL
-router.post('/import', async (req, res, next) => {
-  try {
-    const { url } = req.body
-
-    if (!url) {
-      return res.status(400).json({ message: 'URL is required' })
-    }
-
-    const recipeData = await scrapeRecipe(url)
-
-    if (!recipeData) {
-      return res.status(400).json({
-        message: 'Could not extract recipe data from this URL',
-      })
-    }
-
-    res.json(recipeData)
-  } catch (error) {
-    if (error.message.includes('fetch')) {
-      return res.status(400).json({
-        message: 'Could not access the URL. Please check the link and try again.',
-      })
-    }
-    next(error)
-  }
-})
 
 // Export recipe as PDF
 router.post('/:id/export', async (req, res, next) => {

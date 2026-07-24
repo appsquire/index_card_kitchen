@@ -16,10 +16,10 @@ export default function RecipeEdit() {
   if (!recipe) {
     return (
       <div className="text-center py-16">
-        <h2 className="text-xl font-serif text-brown-700 mb-4">
+        <h2 className="text-xl font-serif text-wicker-700 mb-4">
           Recipe not found
         </h2>
-        <Link to="/" className="text-rust hover:underline">
+        <Link to="/" className="text-gingham hover:underline">
           Back to recipes
         </Link>
       </div>
@@ -44,13 +44,13 @@ export default function RecipeEdit() {
     <div>
       <Link
         to={`/recipe/${id}`}
-        className="inline-flex items-center gap-1 text-brown-600 hover:text-rust mb-6"
+        className="inline-flex items-center gap-1 text-wicker-600 hover:text-gingham mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to recipe
       </Link>
 
-      <h1 className="text-3xl font-serif font-bold text-brown-800 mb-8">
+      <h1 className="text-3xl font-serif font-bold text-wicker-800 mb-8">
         Edit Recipe
       </h1>
 

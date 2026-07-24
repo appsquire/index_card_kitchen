@@ -1,26 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply bg-cream text-brown-800 font-serif;
+    @apply bg-cream text-wicker-900 font-serif;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-rust text-white px-4 py-2 rounded-lg hover:bg-orange-700
-           transition-colors duration-200 font-medium;
+    @apply bg-gingham text-white px-4 py-2 rounded-lg hover:bg-gingham-dark
+           transition-colors duration-200 font-medium shadow-sm;
   }
 
   .btn-secondary {
-    @apply bg-cream-dark text-brown-700 px-4 py-2 rounded-lg
-           hover:bg-brown-100 transition-colors duration-200 border border-brown-200;
+    @apply bg-cream-dark text-wicker-700 px-4 py-2 rounded-lg
+           hover:bg-wicker-100 transition-colors duration-200 border border-wicker-200;
   }
 
   .card {
-    @apply bg-white rounded-lg shadow-card p-6 border border-brown-100;
+    @apply bg-white rounded-lg shadow-card p-6 border border-wicker-200;
   }
 
   .card-hover {
@@ -28,27 +30,47 @@
   }
 
   .input {
-    @apply w-full px-4 py-2 border border-brown-200 rounded-lg
-           focus:ring-2 focus:ring-rust focus:border-transparent
+    @apply w-full px-4 py-2 border border-wicker-200 rounded-lg
+           focus:ring-2 focus:ring-gingham focus:border-transparent
            outline-none transition-all duration-200 bg-white;
   }
 
   .recipe-card {
-    @apply bg-cream-dark border-2 border-brown-300 rounded-sm p-6
+    @apply bg-wicker-50 border-2 border-wicker-300 rounded-sm p-6
            shadow-md relative;
     background-image:
       repeating-linear-gradient(
         0deg,
         transparent,
         transparent 27px,
-        #E1D0B8 28px
+        #F0D9B5 28px
       );
     background-position: 0 1.2em;
   }
 
   .recipe-card-title {
-    @apply font-serif text-2xl text-brown-800 border-b-2 border-brown-300
+    @apply font-serif text-2xl text-wicker-900 border-b-2 border-wicker-300
            pb-2 mb-4;
+  }
+
+  /* Wicker basket texture overlay */
+  .wicker-texture {
+    background-image:
+      linear-gradient(90deg, rgba(196, 159, 112, 0.03) 1px, transparent 1px),
+      linear-gradient(rgba(196, 159, 112, 0.03) 1px, transparent 1px);
+    background-size: 8px 8px;
+  }
+
+  /* Gingham pattern for accents */
+  .gingham-accent {
+    background-color: #FEF9F3;
+    background-image:
+      linear-gradient(45deg, #F5E1E1 25%, transparent 25%),
+      linear-gradient(-45deg, #F5E1E1 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #F5E1E1 75%),
+      linear-gradient(-45deg, transparent 75%, #F5E1E1 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
   }
 }
 

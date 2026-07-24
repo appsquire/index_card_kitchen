@@ -104,13 +104,13 @@ export default function RecipeForm({ initialData, onSubmit, loading }) {
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* Basic Info */}
       <section className="card">
-        <h2 className="text-lg font-serif font-semibold text-brown-800 mb-4">
+        <h2 className="text-lg font-serif font-semibold text-wicker-800 mb-4">
           Basic Information
         </h2>
 
         <div className="space-y-4">
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-brown-700 mb-1">
+            <label htmlFor="title" className="block text-sm font-medium text-wicker-700 mb-1">
               Recipe Title *
             </label>
             <input
@@ -125,8 +125,8 @@ export default function RecipeForm({ initialData, onSubmit, loading }) {
           </div>
 
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-brown-700 mb-1">
-              Description
+            <label htmlFor="description" className="block text-sm font-medium text-wicker-700 mb-1">
+              Description <span className="text-wicker-400 font-normal">(optional)</span>
             </label>
             <textarea
               id="description"
@@ -135,13 +135,14 @@ export default function RecipeForm({ initialData, onSubmit, loading }) {
               onChange={handleChange}
               rows={3}
               className="input"
+              placeholder="A brief description of this recipe..."
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="sourceUrl" className="block text-sm font-medium text-brown-700 mb-1">
-                Source URL
+              <label htmlFor="sourceUrl" className="block text-sm font-medium text-wicker-700 mb-1">
+                Source URL <span className="text-wicker-400 font-normal">(optional)</span>
               </label>
               <input
                 type="url"
@@ -152,11 +153,12 @@ export default function RecipeForm({ initialData, onSubmit, loading }) {
                 className="input"
                 placeholder="https://..."
               />
+              <p className="mt-1 text-xs text-wicker-500">Link to the original recipe for attribution</p>
             </div>
 
             <div>
-              <label htmlFor="imageUrl" className="block text-sm font-medium text-brown-700 mb-1">
-                Image URL
+              <label htmlFor="imageUrl" className="block text-sm font-medium text-wicker-700 mb-1">
+                Image URL <span className="text-wicker-400 font-normal">(optional)</span>
               </label>
               <input
                 type="url"
@@ -167,13 +169,14 @@ export default function RecipeForm({ initialData, onSubmit, loading }) {
                 className="input"
                 placeholder="https://..."
               />
+              <p className="mt-1 text-xs text-wicker-500">Right-click an image online → Copy image address</p>
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label htmlFor="prepTime" className="block text-sm font-medium text-brown-700 mb-1">
-                Prep Time (min)
+              <label htmlFor="prepTime" className="block text-sm font-medium text-wicker-700 mb-1">
+                Prep Time <span className="text-wicker-400 font-normal">(min)</span>
               </label>
               <input
                 type="number"
@@ -187,8 +190,8 @@ export default function RecipeForm({ initialData, onSubmit, loading }) {
             </div>
 
             <div>
-              <label htmlFor="cookTime" className="block text-sm font-medium text-brown-700 mb-1">
-                Cook Time (min)
+              <label htmlFor="cookTime" className="block text-sm font-medium text-wicker-700 mb-1">
+                Cook Time <span className="text-wicker-400 font-normal">(min)</span>
               </label>
               <input
                 type="number"
@@ -202,8 +205,8 @@ export default function RecipeForm({ initialData, onSubmit, loading }) {
             </div>
 
             <div>
-              <label htmlFor="servings" className="block text-sm font-medium text-brown-700 mb-1">
-                Servings
+              <label htmlFor="servings" className="block text-sm font-medium text-wicker-700 mb-1">
+                Servings <span className="text-wicker-400 font-normal">(optional)</span>
               </label>
               <input
                 type="number"
@@ -221,14 +224,14 @@ export default function RecipeForm({ initialData, onSubmit, loading }) {
 
       {/* Ingredients */}
       <section className="card">
-        <h2 className="text-lg font-serif font-semibold text-brown-800 mb-4">
+        <h2 className="text-lg font-serif font-semibold text-wicker-800 mb-4">
           Ingredients
         </h2>
 
         <div className="space-y-2">
           {formData.ingredients.map((ingredient, index) => (
             <div key={index} className="flex gap-2 items-start">
-              <GripVertical className="w-5 h-5 text-brown-300 mt-2.5 cursor-move" />
+              <GripVertical className="w-5 h-5 text-wicker-300 mt-2.5 cursor-move" />
               <input
                 type="text"
                 value={ingredient.amount}
@@ -253,7 +256,7 @@ export default function RecipeForm({ initialData, onSubmit, loading }) {
               <button
                 type="button"
                 onClick={() => removeIngredient(index)}
-                className="p-2 text-brown-400 hover:text-red-600 transition-colors"
+                className="p-2 text-wicker-400 hover:text-red-600 transition-colors"
                 disabled={formData.ingredients.length === 1}
               >
                 <Trash2 className="w-5 h-5" />
@@ -265,7 +268,7 @@ export default function RecipeForm({ initialData, onSubmit, loading }) {
         <button
           type="button"
           onClick={addIngredient}
-          className="mt-4 flex items-center gap-1 text-rust hover:text-orange-700 transition-colors"
+          className="mt-4 flex items-center gap-1 text-gingham hover:text-orange-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
           Add Ingredient
@@ -274,14 +277,14 @@ export default function RecipeForm({ initialData, onSubmit, loading }) {
 
       {/* Instructions */}
       <section className="card">
-        <h2 className="text-lg font-serif font-semibold text-brown-800 mb-4">
+        <h2 className="text-lg font-serif font-semibold text-wicker-800 mb-4">
           Instructions
         </h2>
 
         <div className="space-y-3">
           {formData.instructions.map((instruction, index) => (
             <div key={index} className="flex gap-2 items-start">
-              <span className="flex-shrink-0 w-8 h-8 rounded-full bg-rust text-white flex items-center justify-center text-sm font-medium mt-1">
+              <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gingham text-white flex items-center justify-center text-sm font-medium mt-1">
                 {index + 1}
               </span>
               <textarea
@@ -294,7 +297,7 @@ export default function RecipeForm({ initialData, onSubmit, loading }) {
               <button
                 type="button"
                 onClick={() => removeInstruction(index)}
-                className="p-2 text-brown-400 hover:text-red-600 transition-colors"
+                className="p-2 text-wicker-400 hover:text-red-600 transition-colors"
                 disabled={formData.instructions.length === 1}
               >
                 <Trash2 className="w-5 h-5" />
@@ -306,7 +309,7 @@ export default function RecipeForm({ initialData, onSubmit, loading }) {
         <button
           type="button"
           onClick={addInstruction}
-          className="mt-4 flex items-center gap-1 text-rust hover:text-orange-700 transition-colors"
+          className="mt-4 flex items-center gap-1 text-gingham hover:text-orange-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
           Add Step
@@ -316,7 +319,7 @@ export default function RecipeForm({ initialData, onSubmit, loading }) {
       {/* Categories */}
       {categories.length > 0 && (
         <section className="card">
-          <h2 className="text-lg font-serif font-semibold text-brown-800 mb-4">
+          <h2 className="text-lg font-serif font-semibold text-wicker-800 mb-4">
             Categories
           </h2>
 
@@ -328,8 +331,8 @@ export default function RecipeForm({ initialData, onSubmit, loading }) {
                 onClick={() => handleCategoryToggle(category.id)}
                 className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
                   formData.categoryIds.includes(category.id)
-                    ? 'bg-rust text-white'
-                    : 'bg-brown-100 text-brown-600 hover:bg-brown-200'
+                    ? 'bg-gingham text-white'
+                    : 'bg-wicker-100 text-wicker-600 hover:bg-wicker-200'
                 }`}
               >
                 {category.name}

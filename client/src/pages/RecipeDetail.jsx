@@ -27,10 +27,10 @@ export default function RecipeDetail() {
   if (!recipe) {
     return (
       <div className="text-center py-16">
-        <h2 className="text-xl font-serif text-brown-700 mb-4">
+        <h2 className="text-xl font-serif text-wicker-700 mb-4">
           Recipe not found
         </h2>
-        <Link to="/" className="text-rust hover:underline">
+        <Link to="/" className="text-gingham hover:underline">
           Back to recipes
         </Link>
       </div>
@@ -100,7 +100,7 @@ export default function RecipeDetail() {
       {/* Back button */}
       <Link
         to="/"
-        className="inline-flex items-center gap-1 text-brown-600 hover:text-rust mb-6"
+        className="inline-flex items-center gap-1 text-wicker-600 hover:text-gingham mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to recipes
@@ -112,7 +112,7 @@ export default function RecipeDetail() {
           {/* Header */}
           <div>
             {recipe.imageUrl && (
-              <div className="aspect-video rounded-lg overflow-hidden mb-6 bg-brown-100">
+              <div className="aspect-video rounded-lg overflow-hidden mb-6 bg-wicker-100">
                 <img
                   src={recipe.imageUrl}
                   alt={recipe.title}
@@ -121,12 +121,12 @@ export default function RecipeDetail() {
               </div>
             )}
 
-            <h1 className="text-3xl md:text-4xl font-serif font-bold text-brown-800">
+            <h1 className="text-3xl md:text-4xl font-serif font-bold text-wicker-800">
               {recipe.title}
             </h1>
 
             {recipe.description && (
-              <p className="mt-4 text-lg text-brown-600">
+              <p className="mt-4 text-lg text-wicker-600">
                 {recipe.description}
               </p>
             )}
@@ -137,7 +137,7 @@ export default function RecipeDetail() {
                 {recipeCategories.map((cat) => (
                   <span
                     key={cat.id}
-                    className="px-3 py-1 text-sm bg-brown-100 text-brown-600 rounded-full"
+                    className="px-3 py-1 text-sm bg-wicker-100 text-wicker-600 rounded-full"
                     style={{ borderLeft: `3px solid ${cat.color || '#B08C5C'}` }}
                   >
                     {cat.name}
@@ -147,12 +147,12 @@ export default function RecipeDetail() {
             )}
 
             {/* Meta info */}
-            <div className="mt-6 flex flex-wrap gap-6 text-brown-600">
+            <div className="mt-6 flex flex-wrap gap-6 text-wicker-600">
               {recipe.prepTime > 0 && (
                 <div className="flex items-center gap-2">
                   <Clock className="w-5 h-5" />
                   <div>
-                    <div className="text-sm text-brown-500">Prep Time</div>
+                    <div className="text-sm text-wicker-500">Prep Time</div>
                     <div className="font-medium">{recipe.prepTime} min</div>
                   </div>
                 </div>
@@ -161,7 +161,7 @@ export default function RecipeDetail() {
                 <div className="flex items-center gap-2">
                   <Clock className="w-5 h-5" />
                   <div>
-                    <div className="text-sm text-brown-500">Cook Time</div>
+                    <div className="text-sm text-wicker-500">Cook Time</div>
                     <div className="font-medium">{recipe.cookTime} min</div>
                   </div>
                 </div>
@@ -170,7 +170,7 @@ export default function RecipeDetail() {
                 <div className="flex items-center gap-2">
                   <Clock className="w-5 h-5" />
                   <div>
-                    <div className="text-sm text-brown-500">Total Time</div>
+                    <div className="text-sm text-wicker-500">Total Time</div>
                     <div className="font-medium">{totalTime} min</div>
                   </div>
                 </div>
@@ -179,7 +179,7 @@ export default function RecipeDetail() {
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5" />
                   <div>
-                    <div className="text-sm text-brown-500">Servings</div>
+                    <div className="text-sm text-wicker-500">Servings</div>
                     <div className="font-medium">{recipe.servings}</div>
                   </div>
                 </div>
@@ -192,7 +192,7 @@ export default function RecipeDetail() {
                 href={recipe.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-4 inline-flex items-center gap-1 text-rust hover:underline"
+                className="mt-4 inline-flex items-center gap-1 text-gingham hover:underline"
               >
                 <ExternalLink className="w-4 h-4" />
                 View original recipe
@@ -202,18 +202,18 @@ export default function RecipeDetail() {
 
           {/* Ingredients */}
           <section className="card">
-            <h2 className="text-xl font-serif font-semibold text-brown-800 mb-4">
+            <h2 className="text-xl font-serif font-semibold text-wicker-800 mb-4">
               Ingredients
             </h2>
             <ul className="space-y-2">
               {recipe.ingredients?.map((ing, idx) => (
                 <li
                   key={idx}
-                  className="flex items-start gap-3 text-brown-700 py-1"
+                  className="flex items-start gap-3 text-wicker-700 py-1"
                 >
                   <input
                     type="checkbox"
-                    className="mt-1 rounded border-brown-300 text-rust focus:ring-rust"
+                    className="mt-1 rounded border-wicker-300 text-gingham focus:ring-gingham"
                   />
                   <span>{formatIngredient(ing)}</span>
                 </li>
@@ -223,16 +223,16 @@ export default function RecipeDetail() {
 
           {/* Instructions */}
           <section className="card">
-            <h2 className="text-xl font-serif font-semibold text-brown-800 mb-4">
+            <h2 className="text-xl font-serif font-semibold text-wicker-800 mb-4">
               Instructions
             </h2>
             <ol className="space-y-6">
               {recipe.instructions?.map((inst, idx) => (
                 <li key={idx} className="flex gap-4">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-rust text-white flex items-center justify-center text-sm font-medium">
+                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gingham text-white flex items-center justify-center text-sm font-medium">
                     {idx + 1}
                   </span>
-                  <p className="text-brown-700 pt-1">{inst.step}</p>
+                  <p className="text-wicker-700 pt-1">{inst.step}</p>
                 </li>
               ))}
             </ol>
@@ -242,7 +242,7 @@ export default function RecipeDetail() {
         {/* Sidebar */}
         <div className="lg:col-span-1">
           <div className="card sticky top-24 space-y-4">
-            <h3 className="font-serif font-semibold text-brown-800">Actions</h3>
+            <h3 className="font-serif font-semibold text-wicker-800">Actions</h3>
 
             <Link
               to={`/recipe/${id}/edit`}
@@ -269,11 +269,11 @@ export default function RecipeDetail() {
               {exporting ? 'Exporting...' : 'Export as PDF'}
             </button>
 
-            <hr className="border-brown-200" />
+            <hr className="border-wicker-200" />
 
             {showDeleteConfirm ? (
               <div className="space-y-2">
-                <p className="text-sm text-brown-600">
+                <p className="text-sm text-wicker-600">
                   Are you sure you want to delete this recipe?
                 </p>
                 <div className="flex gap-2">

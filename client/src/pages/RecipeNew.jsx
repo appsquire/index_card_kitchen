@@ -28,13 +28,13 @@ export default function RecipeNew() {
     <div>
       <Link
         to="/"
-        className="inline-flex items-center gap-1 text-brown-600 hover:text-rust mb-6"
+        className="inline-flex items-center gap-1 text-wicker-600 hover:text-gingham mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to recipes
       </Link>
 
-      <h1 className="text-3xl font-serif font-bold text-brown-800 mb-8">
+      <h1 className="text-3xl font-serif font-bold text-wicker-800 mb-8">
         Add New Recipe
       </h1>
 

@@ -1,6 +1,6 @@
 import { openDB } from 'idb'
 
-const DB_NAME = 'recipebox'
+const DB_NAME = 'indexcardkitchen'
 const DB_VERSION = 1
 
 async function getDb() {

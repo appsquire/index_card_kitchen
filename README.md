@@ -1,6 +1,6 @@
-# RecipeBox
+# Index Card Kitchen
 
-A clean, distraction-free web app for saving recipes and generating beautiful printable recipe cards with a classic/vintage visual style.
+A clean, distraction-free web app for saving recipes and generating beautiful printable recipe cards with a classic/vintage index-card visual style.
 
 ## Features
 
@@ -70,7 +70,7 @@ A clean, distraction-free web app for saving recipes and generating beautiful pr
 ## Project Structure
 
 ```
-recipebox/
+index-card-kitchen/
 ├── client/                   # React frontend
 │   ├── src/
 │   │   ├── components/      # Reusable UI components

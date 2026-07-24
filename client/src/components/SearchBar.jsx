@@ -21,7 +21,7 @@ export default function SearchBar({ onSearch, selectedCategory, onCategoryChange
     <div className="mb-6">
       <form onSubmit={handleSubmit} className="flex gap-2">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brown-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-400" />
           <input
             type="text"
             value={query}
@@ -33,7 +33,7 @@ export default function SearchBar({ onSearch, selectedCategory, onCategoryChange
             <button
               type="button"
               onClick={handleClear}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-brown-400 hover:text-brown-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-wicker-400 hover:text-wicker-600"
             >
               <X className="w-5 h-5" />
             </button>
@@ -42,7 +42,7 @@ export default function SearchBar({ onSearch, selectedCategory, onCategoryChange
         <button
           type="button"
           onClick={() => setShowFilters(!showFilters)}
-          className={`btn-secondary flex items-center gap-1 ${showFilters ? 'bg-brown-200' : ''}`}
+          className={`btn-secondary flex items-center gap-1 ${showFilters ? 'bg-wicker-200' : ''}`}
         >
           <Filter className="w-4 h-4" />
           <span className="hidden sm:inline">Filters</span>
@@ -54,15 +54,15 @@ export default function SearchBar({ onSearch, selectedCategory, onCategoryChange
 
       {/* Filter Panel */}
       {showFilters && (
-        <div className="mt-4 p-4 bg-white rounded-lg border border-brown-200">
-          <h4 className="text-sm font-medium text-brown-700 mb-3">Filter by Category</h4>
+        <div className="mt-4 p-4 bg-white rounded-lg border border-wicker-200">
+          <h4 className="text-sm font-medium text-wicker-700 mb-3">Filter by Category</h4>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => onCategoryChange(null)}
               className={`px-3 py-1.5 text-sm rounded-full transition-colors ${
                 !selectedCategory
-                  ? 'bg-rust text-white'
-                  : 'bg-brown-100 text-brown-600 hover:bg-brown-200'
+                  ? 'bg-gingham text-white'
+                  : 'bg-wicker-100 text-wicker-600 hover:bg-wicker-200'
               }`}
             >
               All
@@ -73,8 +73,8 @@ export default function SearchBar({ onSearch, selectedCategory, onCategoryChange
                 onClick={() => onCategoryChange(category.id)}
                 className={`px-3 py-1.5 text-sm rounded-full transition-colors ${
                   selectedCategory === category.id
-                    ? 'bg-rust text-white'
-                    : 'bg-brown-100 text-brown-600 hover:bg-brown-200'
+                    ? 'bg-gingham text-white'
+                    : 'bg-wicker-100 text-wicker-600 hover:bg-wicker-200'
                 }`}
                 style={
                   selectedCategory === category.id

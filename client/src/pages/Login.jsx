@@ -43,10 +43,10 @@ export default function Login() {
   return (
     <div className="max-w-md mx-auto">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-serif font-bold text-brown-800 mb-2">
+        <h1 className="text-3xl font-serif font-bold text-wicker-800 mb-2">
           Welcome Back
         </h1>
-        <p className="text-brown-600">
+        <p className="text-wicker-600">
           Sign in to sync your recipes across devices
         </p>
       </div>
@@ -61,11 +61,11 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-brown-700 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-wicker-700 mb-1">
               Email
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brown-400" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-400" />
               <input
                 type="email"
                 id="email"
@@ -79,11 +79,11 @@ export default function Login() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-brown-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-wicker-700 mb-1">
               Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brown-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-400" />
               <input
                 type="password"
                 id="password"
@@ -107,10 +107,10 @@ export default function Login() {
 
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-brown-200"></div>
+            <div className="w-full border-t border-wicker-200"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-brown-500">or</span>
+            <span className="px-2 bg-white text-wicker-500">or</span>
           </div>
         </div>
 
@@ -139,17 +139,17 @@ export default function Login() {
           Continue with Google
         </button>
 
-        <p className="mt-6 text-center text-sm text-brown-600">
+        <p className="mt-6 text-center text-sm text-wicker-600">
           Don't have an account?{' '}
-          <Link to="/register" className="text-rust hover:underline font-medium">
+          <Link to="/register" className="text-gingham hover:underline font-medium">
             Create one
           </Link>
         </p>
       </div>
 
-      <p className="mt-6 text-center text-sm text-brown-500">
-        You can also use RecipeBox without an account.{' '}
-        <Link to="/" className="text-rust hover:underline">
+      <p className="mt-6 text-center text-sm text-wicker-500">
+        You can also use Index Card Kitchen without an account.{' '}
+        <Link to="/" className="text-gingham hover:underline">
           Continue without signing in
         </Link>
       </p>

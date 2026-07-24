@@ -256,7 +256,7 @@ function generateRecipeHtml(recipe) {
 
     <div class="footer">
       ${recipe.sourceUrl ? `<p class="source">Source: ${escapeHtml(new URL(recipe.sourceUrl).hostname)}</p>` : ''}
-      <p class="brand">RecipeBox</p>
+      <p class="brand">Index Card Kitchen</p>
     </div>
   </div>
 </body>

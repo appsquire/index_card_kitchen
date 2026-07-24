@@ -3,17 +3,17 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: recipebox-db
+    container_name: index-card-kitchen-db
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-recipebox}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-recipebox_secret}
-      POSTGRES_DB: ${POSTGRES_DB:-recipebox}
+      POSTGRES_USER: ${POSTGRES_USER:-indexcardkitchen}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-indexcardkitchen_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-indexcardkitchen}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5434:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-recipebox}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-indexcardkitchen}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -23,11 +23,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: recipebox-server
+    container_name: index-card-kitchen-server
     environment:
       NODE_ENV: production
       PORT: 4000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-recipebox}:${POSTGRES_PASSWORD:-recipebox_secret}@postgres:5432/${POSTGRES_DB:-recipebox}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-indexcardkitchen}:${POSTGRES_PASSWORD:-indexcardkitchen_secret}@postgres:5432/${POSTGRES_DB:-indexcardkitchen}
       JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     ports:
@@ -42,11 +42,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: recipebox-migrate
+    container_name: index-card-kitchen-migrate
     command: npm run migrate
     working_dir: /app/server
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-recipebox}:${POSTGRES_PASSWORD:-recipebox_secret}@postgres:5432/${POSTGRES_DB:-recipebox}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-indexcardkitchen}:${POSTGRES_PASSWORD:-indexcardkitchen_secret}@postgres:5432/${POSTGRES_DB:-indexcardkitchen}
     depends_on:
       postgres:
         condition: service_healthy

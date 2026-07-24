@@ -82,14 +82,14 @@ export default function Categories() {
     <div>
       <Link
         to="/"
-        className="inline-flex items-center gap-1 text-brown-600 hover:text-rust mb-6"
+        className="inline-flex items-center gap-1 text-wicker-600 hover:text-gingham mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to recipes
       </Link>
 
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-serif font-bold text-brown-800">
+        <h1 className="text-3xl font-serif font-bold text-wicker-800">
           Categories
         </h1>
         {!showForm && (
@@ -106,7 +106,7 @@ export default function Categories() {
       {/* Add/Edit Form */}
       {showForm && (
         <div className="card mb-8">
-          <h2 className="font-serif font-semibold text-brown-800 mb-4">
+          <h2 className="font-serif font-semibold text-wicker-800 mb-4">
             {editingId ? 'Edit Category' : 'New Category'}
           </h2>
 
@@ -118,7 +118,7 @@ export default function Categories() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-brown-700 mb-1">
+              <label className="block text-sm font-medium text-wicker-700 mb-1">
                 Category Name
               </label>
               <input
@@ -132,7 +132,7 @@ export default function Categories() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-brown-700 mb-2">
+              <label className="block text-sm font-medium text-wicker-700 mb-2">
                 Color
               </label>
               <div className="flex gap-2">
@@ -173,7 +173,7 @@ export default function Categories() {
       {/* Categories List */}
       {categories.length === 0 ? (
         <div className="text-center py-16 card">
-          <p className="text-brown-600 mb-4">
+          <p className="text-wicker-600 mb-4">
             No categories yet. Create one to organize your recipes.
           </p>
           {!showForm && (
@@ -199,22 +199,22 @@ export default function Categories() {
                     className="w-4 h-4 rounded-full"
                     style={{ backgroundColor: category.color || PRESET_COLORS[0] }}
                   />
-                  <span className="font-medium text-brown-800">{category.name}</span>
-                  <span className="text-sm text-brown-500">
+                  <span className="font-medium text-wicker-800">{category.name}</span>
+                  <span className="text-sm text-wicker-500">
                     {count} recipe{count !== 1 ? 's' : ''}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleEdit(category)}
-                    className="p-2 text-brown-400 hover:text-rust transition-colors"
+                    className="p-2 text-wicker-400 hover:text-gingham transition-colors"
                     title="Edit"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(category.id)}
-                    className="p-2 text-brown-400 hover:text-red-600 transition-colors"
+                    className="p-2 text-wicker-400 hover:text-red-600 transition-colors"
                     title="Delete"
                   >
                     <Trash2 className="w-4 h-4" />

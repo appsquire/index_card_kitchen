@@ -13,19 +13,19 @@ export default function RecipeCardPrint({ recipe, size = 'full' }) {
     return (
       <div className="recipe-card max-w-2xl mx-auto print:max-w-none print:mx-0">
         {/* Header with vintage border */}
-        <div className="border-b-2 border-brown-300 pb-4 mb-6">
-          <h1 className="font-serif text-3xl text-brown-800 text-center">
+        <div className="border-b-2 border-wicker-300 pb-4 mb-6">
+          <h1 className="font-serif text-3xl text-wicker-800 text-center">
             {recipe.title}
           </h1>
 
           {recipe.description && (
-            <p className="mt-2 text-center text-brown-600 italic">
+            <p className="mt-2 text-center text-wicker-600 italic">
               {recipe.description}
             </p>
           )}
 
           {/* Meta info */}
-          <div className="mt-4 flex justify-center gap-6 text-sm text-brown-600">
+          <div className="mt-4 flex justify-center gap-6 text-sm text-wicker-600">
             {totalTime > 0 && (
               <span className="flex items-center gap-1">
                 <Clock className="w-4 h-4" />
@@ -44,13 +44,13 @@ export default function RecipeCardPrint({ recipe, size = 'full' }) {
         <div className="grid md:grid-cols-2 gap-8">
           {/* Ingredients */}
           <div>
-            <h2 className="font-serif text-xl text-brown-800 border-b border-brown-200 pb-1 mb-4">
+            <h2 className="font-serif text-xl text-wicker-800 border-b border-wicker-200 pb-1 mb-4">
               Ingredients
             </h2>
             <ul className="space-y-2">
               {recipe.ingredients?.map((ing, idx) => (
-                <li key={idx} className="flex items-start gap-2 text-brown-700">
-                  <span className="text-rust">•</span>
+                <li key={idx} className="flex items-start gap-2 text-wicker-700">
+                  <span className="text-gingham">•</span>
                   <span>{formatIngredient(ing)}</span>
                 </li>
               ))}
@@ -59,13 +59,13 @@ export default function RecipeCardPrint({ recipe, size = 'full' }) {
 
           {/* Instructions */}
           <div>
-            <h2 className="font-serif text-xl text-brown-800 border-b border-brown-200 pb-1 mb-4">
+            <h2 className="font-serif text-xl text-wicker-800 border-b border-wicker-200 pb-1 mb-4">
               Instructions
             </h2>
             <ol className="space-y-4">
               {recipe.instructions?.map((inst, idx) => (
-                <li key={idx} className="flex gap-3 text-brown-700">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-rust text-white flex items-center justify-center text-sm">
+                <li key={idx} className="flex gap-3 text-wicker-700">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gingham text-white flex items-center justify-center text-sm">
                     {idx + 1}
                   </span>
                   <span>{inst.step}</span>
@@ -77,7 +77,7 @@ export default function RecipeCardPrint({ recipe, size = 'full' }) {
 
         {/* Source attribution */}
         {recipe.sourceUrl && (
-          <div className="mt-8 pt-4 border-t border-brown-200 text-center text-sm text-brown-500">
+          <div className="mt-8 pt-4 border-t border-wicker-200 text-center text-sm text-wicker-500">
             <span className="flex items-center justify-center gap-1">
               <ExternalLink className="w-3 h-3" />
               Source: {new URL(recipe.sourceUrl).hostname}
@@ -86,8 +86,8 @@ export default function RecipeCardPrint({ recipe, size = 'full' }) {
         )}
 
         {/* Footer */}
-        <div className="mt-4 text-center text-xs text-brown-400">
-          RecipeBox
+        <div className="mt-4 text-center text-xs text-wicker-400">
+          Index Card Kitchen
         </div>
       </div>
     )
@@ -104,21 +104,21 @@ export default function RecipeCardPrint({ recipe, size = 'full' }) {
         padding: '0.5in',
       }}
     >
-      <h1 className="font-serif text-lg text-brown-800 border-b border-brown-300 pb-1 mb-2">
+      <h1 className="font-serif text-lg text-wicker-800 border-b border-wicker-300 pb-1 mb-2">
         {recipe.title}
       </h1>
 
-      <div className="flex gap-4 text-xs text-brown-500 mb-3">
+      <div className="flex gap-4 text-xs text-wicker-500 mb-3">
         {totalTime > 0 && <span>{totalTime} min</span>}
         {recipe.servings && <span>Serves {recipe.servings}</span>}
       </div>
 
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
-          <h3 className="font-semibold text-brown-700 mb-1">Ingredients</h3>
+          <h3 className="font-semibold text-wicker-700 mb-1">Ingredients</h3>
           <ul className="space-y-0.5">
             {recipe.ingredients?.slice(0, 12).map((ing, idx) => (
-              <li key={idx} className="text-brown-600 text-xs">
+              <li key={idx} className="text-wicker-600 text-xs">
                 • {formatIngredient(ing)}
               </li>
             ))}
@@ -126,10 +126,10 @@ export default function RecipeCardPrint({ recipe, size = 'full' }) {
         </div>
 
         <div>
-          <h3 className="font-semibold text-brown-700 mb-1">Instructions</h3>
+          <h3 className="font-semibold text-wicker-700 mb-1">Instructions</h3>
           <ol className="space-y-1">
             {recipe.instructions?.slice(0, 8).map((inst, idx) => (
-              <li key={idx} className="text-brown-600 text-xs">
+              <li key={idx} className="text-wicker-600 text-xs">
                 {idx + 1}. {inst.step.slice(0, 100)}
                 {inst.step.length > 100 ? '...' : ''}
               </li>
@@ -139,7 +139,7 @@ export default function RecipeCardPrint({ recipe, size = 'full' }) {
       </div>
 
       {recipe.sourceUrl && (
-        <div className="absolute bottom-2 right-4 text-xs text-brown-400">
+        <div className="absolute bottom-2 right-4 text-xs text-wicker-400">
           {new URL(recipe.sourceUrl).hostname}
         </div>
       )}

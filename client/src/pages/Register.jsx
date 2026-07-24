@@ -49,10 +49,10 @@ export default function Register() {
   return (
     <div className="max-w-md mx-auto">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-serif font-bold text-brown-800 mb-2">
+        <h1 className="text-3xl font-serif font-bold text-wicker-800 mb-2">
           Create Your Account
         </h1>
-        <p className="text-brown-600">
+        <p className="text-wicker-600">
           Save and sync your recipes across all your devices
         </p>
       </div>
@@ -81,11 +81,11 @@ export default function Register() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-brown-700 mb-1">
+            <label htmlFor="name" className="block text-sm font-medium text-wicker-700 mb-1">
               Name
             </label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brown-400" />
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-400" />
               <input
                 type="text"
                 id="name"
@@ -99,11 +99,11 @@ export default function Register() {
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-brown-700 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-wicker-700 mb-1">
               Email
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brown-400" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-400" />
               <input
                 type="email"
                 id="email"
@@ -117,11 +117,11 @@ export default function Register() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-brown-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-wicker-700 mb-1">
               Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brown-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-400" />
               <input
                 type="password"
                 id="password"
@@ -133,15 +133,15 @@ export default function Register() {
                 required
               />
             </div>
-            <p className="mt-1 text-xs text-brown-500">At least 8 characters</p>
+            <p className="mt-1 text-xs text-wicker-500">At least 8 characters</p>
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-brown-700 mb-1">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-wicker-700 mb-1">
               Confirm Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brown-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-400" />
               <input
                 type="password"
                 id="confirmPassword"
@@ -163,17 +163,17 @@ export default function Register() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-brown-600">
+        <p className="mt-6 text-center text-sm text-wicker-600">
           Already have an account?{' '}
-          <Link to="/login" className="text-rust hover:underline font-medium">
+          <Link to="/login" className="text-gingham hover:underline font-medium">
             Sign in
           </Link>
         </p>
       </div>
 
-      <p className="mt-6 text-center text-sm text-brown-500">
-        You can also use RecipeBox without an account.{' '}
-        <Link to="/" className="text-rust hover:underline">
+      <p className="mt-6 text-center text-sm text-wicker-500">
+        You can also use Index Card Kitchen without an account.{' '}
+        <Link to="/" className="text-gingham hover:underline">
           Continue without signing up
         </Link>
       </p>

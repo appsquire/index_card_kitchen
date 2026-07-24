@@ -8,7 +8,7 @@ export default function RecipeCard({ recipe }) {
     <Link to={`/recipe/${recipe.id}`} className="block">
       <article className="card card-hover overflow-hidden group">
         {/* Image */}
-        <div className="aspect-video -mx-6 -mt-6 mb-4 overflow-hidden bg-brown-100">
+        <div className="aspect-video -mx-6 -mt-6 mb-4 overflow-hidden bg-wicker-100">
           {recipe.imageUrl ? (
             <img
               src={recipe.imageUrl}
@@ -16,7 +16,7 @@ export default function RecipeCard({ recipe }) {
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-brown-300">
+            <div className="w-full h-full flex items-center justify-center text-wicker-300">
               <svg
                 className="w-16 h-16"
                 fill="none"
@@ -35,18 +35,18 @@ export default function RecipeCard({ recipe }) {
         </div>
 
         {/* Content */}
-        <h3 className="text-lg font-serif font-semibold text-brown-800 group-hover:text-rust transition-colors line-clamp-2">
+        <h3 className="text-lg font-serif font-semibold text-wicker-800 group-hover:text-gingham transition-colors line-clamp-2">
           {recipe.title}
         </h3>
 
         {recipe.description && (
-          <p className="mt-2 text-sm text-brown-600 line-clamp-2">
+          <p className="mt-2 text-sm text-wicker-600 line-clamp-2">
             {recipe.description}
           </p>
         )}
 
         {/* Meta info */}
-        <div className="mt-4 flex items-center gap-4 text-sm text-brown-500">
+        <div className="mt-4 flex items-center gap-4 text-sm text-wicker-500">
           {totalTime > 0 && (
             <span className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
@@ -67,7 +67,7 @@ export default function RecipeCard({ recipe }) {
             {recipe.categoryNames?.slice(0, 3).map((name, idx) => (
               <span
                 key={idx}
-                className="px-2 py-0.5 text-xs bg-brown-100 text-brown-600 rounded-full"
+                className="px-2 py-0.5 text-xs bg-wicker-100 text-wicker-600 rounded-full"
               >
                 {name}
               </span>

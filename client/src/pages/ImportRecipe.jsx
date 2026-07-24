@@ -56,16 +56,16 @@ export default function ImportRecipe() {
     <div>
       <Link
         to="/"
-        className="inline-flex items-center gap-1 text-brown-600 hover:text-rust mb-6"
+        className="inline-flex items-center gap-1 text-wicker-600 hover:text-gingham mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to recipes
       </Link>
 
-      <h1 className="text-3xl font-serif font-bold text-brown-800 mb-2">
+      <h1 className="text-3xl font-serif font-bold text-wicker-800 mb-2">
         Import Recipe from URL
       </h1>
-      <p className="text-brown-600 mb-8">
+      <p className="text-wicker-600 mb-8">
         Paste a link to a recipe and we'll try to extract the details automatically.
       </p>
 
@@ -73,7 +73,7 @@ export default function ImportRecipe() {
       <div className="card mb-8">
         <form onSubmit={handleImport} className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
-            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brown-400" />
+            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-400" />
             <input
               type="url"
               value={url}
@@ -99,9 +99,9 @@ export default function ImportRecipe() {
           </button>
         </form>
 
-        <div className="mt-4 text-sm text-brown-500">
+        <div className="mt-4 text-sm text-wicker-500">
           <p className="font-medium mb-2">Supported sites include:</p>
-          <ul className="grid grid-cols-2 sm:grid-cols-3 gap-1 text-brown-400">
+          <ul className="grid grid-cols-2 sm:grid-cols-3 gap-1 text-wicker-400">
             <li>• AllRecipes</li>
             <li>• Food Network</li>
             <li>• Bon Appétit</li>
@@ -153,8 +153,8 @@ export default function ImportRecipe() {
 
       {/* Manual entry option when no import yet */}
       {!importedData && !loading && (
-        <div className="text-center py-8 border-t border-brown-200">
-          <p className="text-brown-500 mb-4">
+        <div className="text-center py-8 border-t border-wicker-200">
+          <p className="text-wicker-500 mb-4">
             Or add a recipe manually
           </p>
           <Link to="/recipe/new" className="btn-secondary">
