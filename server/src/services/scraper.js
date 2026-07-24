@@ -1,33 +1,96 @@
-import axios from 'axios'
 import * as cheerio from 'cheerio'
+import puppeteer from 'puppeteer'
+
+const BROWSER_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+  Accept:
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Cache-Control': 'no-cache',
+  'Upgrade-Insecure-Requests': '1',
+}
 
 export async function scrapeRecipe(url) {
+  let html = await fetchHtml(url)
+
+  let recipeData = parseHtml(html, url)
+  if (recipeData?.title && (recipeData.ingredients?.length || recipeData.instructions?.length)) {
+    return recipeData
+  }
+
+  // Many recipe sites bot-block plain HTTP; render in a real browser.
+  html = await fetchHtmlWithBrowser(url)
+  recipeData = parseHtml(html, url)
+
+  if (!recipeData?.title) {
+    throw new Error('Could not extract recipe data from this URL')
+  }
+
+  return recipeData
+}
+
+async function fetchHtml(url) {
   try {
-    const response = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-      },
-      timeout: 15000,
+    const response = await fetch(url, {
+      headers: BROWSER_HEADERS,
+      redirect: 'follow',
+      signal: AbortSignal.timeout(15000),
     })
 
-    const $ = cheerio.load(response.data)
-
-    // Try to extract JSON-LD structured data first (Schema.org Recipe)
-    let recipeData = extractJsonLd($)
-
-    if (recipeData) {
-      return recipeData
+    if (!response.ok) {
+      console.warn(`Lightweight fetch returned ${response.status} for ${url}`)
+      return null
     }
 
-    // Fallback: Try to extract from meta tags and common selectors
-    recipeData = extractFromMeta($, url)
-
-    return recipeData
+    return await response.text()
   } catch (error) {
-    console.error('Scraping error:', error.message)
-    throw new Error('Failed to fetch recipe from URL')
+    console.warn('Lightweight fetch failed:', error.message)
+    return null
   }
+}
+
+async function fetchHtmlWithBrowser(url) {
+  const browser = await puppeteer.launch({
+    headless: 'new',
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  })
+
+  try {
+    const page = await browser.newPage()
+    await page.setUserAgent(BROWSER_HEADERS['User-Agent'])
+    await page.setExtraHTTPHeaders({
+      'Accept-Language': BROWSER_HEADERS['Accept-Language'],
+    })
+
+    const response = await page.goto(url, {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000,
+    })
+
+    if (!response || response.status() >= 400) {
+      throw new Error(`Could not access the URL (status ${response?.status() || 'unknown'})`)
+    }
+
+    // Give JSON-LD a moment to appear on JS-heavy sites
+    await page.waitForSelector('script[type="application/ld+json"], h1', {
+      timeout: 5000,
+    }).catch(() => {})
+
+    return await page.content()
+  } finally {
+    await browser.close()
+  }
+}
+
+function parseHtml(html, url) {
+  if (!html) return null
+
+  const $ = cheerio.load(html)
+  const fromJsonLd = extractJsonLd($)
+  if (fromJsonLd) return fromJsonLd
+
+  return extractFromMeta($, url)
 }
 
 function extractJsonLd($) {
@@ -35,44 +98,46 @@ function extractJsonLd($) {
 
   for (let i = 0; i < scripts.length; i++) {
     try {
-      const content = $(scripts[i]).html()
+      let content = $(scripts[i]).html()
+      if (!content) continue
+
+      // Some sites leave HTML comments or trailing commas
+      content = content.trim()
       const json = JSON.parse(content)
 
-      // Handle array of schemas
       const items = Array.isArray(json) ? json : [json]
 
       for (const item of items) {
-        // Check for @graph structure
         if (item['@graph']) {
           for (const graphItem of item['@graph']) {
-            if (graphItem['@type'] === 'Recipe') {
+            if (isRecipeType(graphItem['@type'])) {
               return parseRecipeSchema(graphItem)
             }
           }
         }
 
-        // Direct Recipe type
-        if (item['@type'] === 'Recipe') {
-          return parseRecipeSchema(item)
-        }
-
-        // Array of types
-        if (Array.isArray(item['@type']) && item['@type'].includes('Recipe')) {
+        if (isRecipeType(item['@type'])) {
           return parseRecipeSchema(item)
         }
       }
-    } catch (e) {
-      // Invalid JSON, continue to next script
+    } catch {
+      // Invalid JSON, continue
     }
   }
 
   return null
 }
 
+function isRecipeType(type) {
+  if (!type) return false
+  if (type === 'Recipe') return true
+  return Array.isArray(type) && type.includes('Recipe')
+}
+
 function parseRecipeSchema(schema) {
-  const recipe = {
-    title: schema.name || '',
-    description: schema.description || '',
+  return {
+    title: decodeEntities(schema.name || ''),
+    description: decodeEntities(schema.description || ''),
     imageUrl: extractImage(schema.image),
     prepTime: parseDuration(schema.prepTime),
     cookTime: parseDuration(schema.cookTime),
@@ -80,8 +145,11 @@ function parseRecipeSchema(schema) {
     ingredients: parseIngredients(schema.recipeIngredient),
     instructions: parseInstructions(schema.recipeInstructions),
   }
+}
 
-  return recipe
+function decodeEntities(text) {
+  if (!text || typeof text !== 'string') return text || ''
+  return cheerio.load(`<textarea>${text}</textarea>`, { xml: false })('textarea').val() || text
 }
 
 function extractImage(image) {
@@ -94,14 +162,13 @@ function extractImage(image) {
 
 function parseDuration(duration) {
   if (!duration) return null
+  if (typeof duration === 'number') return duration
 
-  // Parse ISO 8601 duration (e.g., "PT30M", "PT1H30M")
-  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/)
+  const match = String(duration).match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/i)
   if (!match) return null
 
   const hours = parseInt(match[1] || 0, 10)
   const minutes = parseInt(match[2] || 0, 10)
-
   return hours * 60 + minutes
 }
 
@@ -125,7 +192,7 @@ function parseIngredients(ingredients) {
 }
 
 function parseIngredientText(text) {
-  // Try to parse "amount unit name" format
+  text = decodeEntities(text)
   const match = text.match(/^([\d\s\/⁄½¼¾⅓⅔⅛⅜⅝⅞.]+)?\s*([a-zA-Z]+(?:\.|[a-zA-Z]*))?\s*(.+)$/)
 
   if (match) {
@@ -146,7 +213,6 @@ function parseIngredientText(text) {
 function parseInstructions(instructions) {
   if (!instructions) return []
 
-  // Handle string instructions
   if (typeof instructions === 'string') {
     return instructions
       .split(/\n+/)
@@ -160,15 +226,13 @@ function parseInstructions(instructions) {
 
   for (const inst of instructions) {
     if (typeof inst === 'string') {
-      steps.push({ step: inst.trim() })
+      steps.push({ step: decodeEntities(inst.trim()) })
     } else if (inst['@type'] === 'HowToStep') {
-      steps.push({ step: inst.text?.trim() || '' })
+      steps.push({ step: decodeEntities((inst.text || inst.name || '').trim()) })
     } else if (inst['@type'] === 'HowToSection') {
-      // Handle nested sections
-      const sectionSteps = parseInstructions(inst.itemListElement)
-      steps.push(...sectionSteps)
+      steps.push(...parseInstructions(inst.itemListElement))
     } else if (inst.text) {
-      steps.push({ step: inst.text.trim() })
+      steps.push({ step: decodeEntities(inst.text.trim()) })
     }
   }
 
@@ -176,7 +240,6 @@ function parseInstructions(instructions) {
 }
 
 function extractFromMeta($, url) {
-  // Try Open Graph and meta tags
   const title =
     $('meta[property="og:title"]').attr('content') ||
     $('meta[name="title"]').attr('content') ||
@@ -193,11 +256,9 @@ function extractFromMeta($, url) {
     $('meta[name="image"]').attr('content') ||
     ''
 
-  // Try to find ingredients and instructions from common selectors
   const ingredients = []
   const instructions = []
 
-  // Common ingredient selectors
   $('[class*="ingredient"], [data-ingredient], .ingredients li, .recipe-ingredients li').each((_, el) => {
     const text = $(el).text().trim()
     if (text && text.length < 200) {
@@ -205,7 +266,6 @@ function extractFromMeta($, url) {
     }
   })
 
-  // Common instruction selectors
   $('[class*="instruction"], [class*="direction"], [class*="step"], .instructions li, .recipe-instructions li, .recipe-steps li').each((_, el) => {
     const text = $(el).text().trim()
     if (text && text.length < 1000) {

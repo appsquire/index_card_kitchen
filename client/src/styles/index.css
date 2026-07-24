@@ -1,81 +1,110 @@
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Patrick+Hand&family=Special+Elite&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --wall: #eef5f2;
+    --enamel: #fffefa;
+    --ink: #1c2924;
+    --cherry: #c23b3b;
+    --line-blue: #b7d0e8;
+    --margin-red: #e8a0a0;
+  }
+
   body {
-    @apply bg-cream text-wicker-900 font-serif;
+    @apply font-sans text-wicker-900 antialiased;
+    background-color: var(--wall);
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(245, 217, 120, 0.22), transparent 42%),
+      radial-gradient(circle at 88% 8%, rgba(194, 59, 59, 0.08), transparent 36%),
+      radial-gradient(circle at 70% 90%, rgba(79, 122, 92, 0.12), transparent 40%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234f7a5c' fill-opacity='0.045'%3E%3Cpath d='M30 30c2.2-4.8 7-8 12.5-8 2.4 0 4.6.6 6.5 1.7C46.2 14.2 38.7 8 30 8S13.8 14.2 11 23.7c1.9-1.1 4.1-1.7 6.5-1.7 5.5 0 10.3 3.2 12.5 8z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3 {
+    @apply font-hand tracking-wide;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-gingham text-white px-4 py-2 rounded-lg hover:bg-gingham-dark
-           transition-colors duration-200 font-medium shadow-sm;
+    @apply bg-gingham text-white px-4 py-2 rounded-md font-semibold
+           shadow-paper hover:bg-gingham-dark transition-all duration-200
+           hover:-translate-y-0.5 active:translate-y-0;
   }
 
   .btn-secondary {
-    @apply bg-cream-dark text-wicker-700 px-4 py-2 rounded-lg
-           hover:bg-wicker-100 transition-colors duration-200 border border-wicker-200;
+    @apply bg-enamel text-wicker-700 px-4 py-2 rounded-md font-semibold
+           border-2 border-wicker-200 hover:border-wicker-400 hover:bg-butter-light
+           transition-colors duration-200 shadow-paper;
   }
 
   .card {
-    @apply bg-white rounded-lg shadow-card p-6 border border-wicker-200;
+    @apply bg-enamel p-6 border-2 border-wicker-200 rounded-md shadow-card;
   }
 
   .card-hover {
-    @apply hover:shadow-card-hover transition-shadow duration-200;
+    @apply hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200;
   }
 
   .input {
-    @apply w-full px-4 py-2 border border-wicker-200 rounded-lg
-           focus:ring-2 focus:ring-gingham focus:border-transparent
-           outline-none transition-all duration-200 bg-white;
+    @apply w-full px-4 py-2.5 border-2 border-wicker-200 rounded-md bg-enamel
+           focus:ring-2 focus:ring-gingham/30 focus:border-gingham
+           outline-none transition-all duration-200 placeholder:text-wicker-400;
   }
 
+  /* Classic school-supply index card */
   .recipe-card {
-    @apply bg-wicker-50 border-2 border-wicker-300 rounded-sm p-6
-           shadow-md relative;
+    @apply relative bg-enamel text-wicker-900 p-6 shadow-paper rounded-[2px];
+    border: 1px solid #d8d2c4;
     background-image:
+      linear-gradient(90deg, transparent 39px, var(--margin-red) 39px, var(--margin-red) 41px, transparent 41px),
       repeating-linear-gradient(
-        0deg,
         transparent,
         transparent 27px,
-        #F0D9B5 28px
+        var(--line-blue) 28px
       );
-    background-position: 0 1.2em;
+    background-position: 0 0, 0 1.35rem;
+    line-height: 28px;
   }
 
   .recipe-card-title {
-    @apply font-serif text-2xl text-wicker-900 border-b-2 border-wicker-300
-           pb-2 mb-4;
+    @apply font-hand text-3xl text-wicker-900 pb-1 mb-3;
+    border-bottom: 2px solid var(--margin-red);
+    line-height: 1.2;
   }
 
-  /* Wicker basket texture overlay */
-  .wicker-texture {
-    background-image:
-      linear-gradient(90deg, rgba(196, 159, 112, 0.03) 1px, transparent 1px),
-      linear-gradient(rgba(196, 159, 112, 0.03) 1px, transparent 1px);
-    background-size: 8px 8px;
+  .kitchen-header {
+    @apply bg-enamel/95 backdrop-blur-sm border-b-4 border-gingham sticky top-0 z-50;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset;
   }
 
-  /* Gingham pattern for accents */
-  .gingham-accent {
-    background-color: #FEF9F3;
+  .brand-mark {
+    @apply font-hand text-2xl sm:text-3xl text-wicker-900 leading-none;
+  }
+
+  .index-thumb {
+    @apply relative overflow-hidden bg-butter-light border-2 border-wicker-200;
     background-image:
-      linear-gradient(45deg, #F5E1E1 25%, transparent 25%),
-      linear-gradient(-45deg, #F5E1E1 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, #F5E1E1 75%),
-      linear-gradient(-45deg, transparent 75%, #F5E1E1 75%);
-    background-size: 20px 20px;
-    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+      linear-gradient(90deg, transparent 18px, var(--margin-red) 18px, var(--margin-red) 19px, transparent 19px),
+      repeating-linear-gradient(
+        transparent,
+        transparent 11px,
+        var(--line-blue) 12px
+      );
   }
 }
 
-/* Print styles for recipe cards */
 @media print {
+  body {
+    background: white !important;
+  }
+
   .no-print {
     display: none !important;
   }
@@ -83,5 +112,6 @@
   .recipe-card {
     break-inside: avoid;
     page-break-inside: avoid;
+    box-shadow: none;
   }
 }

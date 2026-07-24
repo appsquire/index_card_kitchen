@@ -48,10 +48,13 @@ export default function Home() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <h1 className="text-3xl font-serif font-bold text-wicker-800">
-          My Recipes
-        </h1>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+        <div>
+          <p className="font-hand text-gingham text-lg mb-1">The recipe box</p>
+          <h1 className="text-4xl sm:text-5xl text-wicker-900 leading-none">
+            What&apos;s cooking
+          </h1>
+        </div>
         <Link to="/recipe/new" className="btn-primary flex items-center gap-2 justify-center">
           <Plus className="w-5 h-5" />
           Add Recipe
@@ -65,32 +68,34 @@ export default function Home() {
       />
 
       {filteredRecipes.length === 0 ? (
-        <div className="text-center py-16">
+        <div className="text-center py-16 max-w-md mx-auto">
           {recipes.length === 0 ? (
             <>
-              <BookOpen className="w-16 h-16 mx-auto text-wicker-300 mb-4" />
-              <h2 className="text-xl font-serif text-wicker-700 mb-2">
-                No recipes yet
+              <div className="mx-auto mb-6 w-40 h-28 recipe-card animate-soft-settle flex items-center justify-center">
+                <BookOpen className="w-10 h-10 text-wicker-400" />
+              </div>
+              <h2 className="text-3xl text-wicker-800 mb-2">
+                Empty box, for now
               </h2>
-              <p className="text-wicker-500 mb-6">
-                Start building your recipe collection
+              <p className="text-wicker-600 mb-6 leading-relaxed">
+                Save a Sunday supper, a cookie sheet miracle, or that casserole everyone asks for.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link to="/recipe/new" className="btn-primary">
-                  Add Manual Recipe
+                  Write one by hand
                 </Link>
                 <Link to="/recipe/import" className="btn-secondary">
-                  Import from URL
+                  Bring one in from a link
                 </Link>
               </div>
             </>
           ) : (
             <>
-              <h2 className="text-xl font-serif text-wicker-700 mb-2">
-                No recipes found
+              <h2 className="text-3xl text-wicker-800 mb-2">
+                Nothing in this drawer
               </h2>
-              <p className="text-wicker-500">
-                Try adjusting your search or filters
+              <p className="text-wicker-600">
+                Try another search, or clear the filters.
               </p>
             </>
           )}

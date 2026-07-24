@@ -49,7 +49,7 @@ function generateRecipeHtml(recipe) {
 <head>
   <meta charset="UTF-8">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Patrick+Hand&display=swap');
 
     * {
       margin: 0;
@@ -58,43 +58,32 @@ function generateRecipeHtml(recipe) {
     }
 
     body {
-      font-family: 'Crimson Text', Georgia, serif;
-      color: #2E2408;
-      background: #FDF8F3;
+      font-family: 'Nunito', sans-serif;
+      color: #1c2924;
+      background: #eef5f2;
       line-height: 1.6;
     }
 
     .recipe-card {
-      background: #F5EDE4;
-      border: 2px solid #C9B08A;
-      border-radius: 4px;
+      background: #fffefa;
+      border: 1px solid #d8d2c4;
+      border-radius: 2px;
       padding: 40px;
       max-width: 100%;
       position: relative;
-    }
-
-    .recipe-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
       background-image:
+        linear-gradient(90deg, transparent 39px, #e8a0a0 39px, #e8a0a0 41px, transparent 41px),
         repeating-linear-gradient(
-          0deg,
           transparent,
           transparent 27px,
-          #E1D0B8 28px
+          #b7d0e8 28px
         );
-      background-position: 0 40px;
-      pointer-events: none;
-      opacity: 0.5;
+      background-position: 0 0, 0 1.35rem;
     }
 
     .header {
       text-align: center;
-      border-bottom: 2px solid #C9B08A;
+      border-bottom: 2px solid rgba(194, 59, 59, 0.4);
       padding-bottom: 20px;
       margin-bottom: 30px;
       position: relative;
@@ -102,15 +91,17 @@ function generateRecipeHtml(recipe) {
     }
 
     h1 {
-      font-size: 28px;
-      font-weight: 600;
-      color: #4A3A0C;
+      font-family: 'Patrick Hand', cursive;
+      font-size: 34px;
+      font-weight: 400;
+      color: #1c2924;
       margin-bottom: 10px;
+      line-height: 1.15;
     }
 
     .description {
       font-style: italic;
-      color: #6B5210;
+      color: #446358;
       margin-bottom: 15px;
     }
 
@@ -119,7 +110,8 @@ function generateRecipeHtml(recipe) {
       justify-content: center;
       gap: 30px;
       font-size: 14px;
-      color: #6B5210;
+      color: #446358;
+      font-weight: 600;
     }
 
     .meta-item {
@@ -137,10 +129,11 @@ function generateRecipeHtml(recipe) {
     }
 
     h2 {
-      font-size: 18px;
-      font-weight: 600;
-      color: #4A3A0C;
-      border-bottom: 1px solid #C9B08A;
+      font-family: 'Patrick Hand', cursive;
+      font-size: 24px;
+      font-weight: 400;
+      color: #1c2924;
+      border-bottom: 1px solid #c5d9d0;
       padding-bottom: 5px;
       margin-bottom: 15px;
     }
@@ -157,7 +150,7 @@ function generateRecipeHtml(recipe) {
 
     .ingredients li::before {
       content: '•';
-      color: #B45309;
+      color: #c23b3b;
       position: absolute;
       left: 0;
     }
@@ -181,23 +174,23 @@ function generateRecipeHtml(recipe) {
       top: 8px;
       width: 24px;
       height: 24px;
-      background: #B45309;
+      background: #c23b3b;
       color: white;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
     }
 
     .footer {
       margin-top: 30px;
       padding-top: 15px;
-      border-top: 1px solid #C9B08A;
+      border-top: 1px solid #c5d9d0;
       text-align: center;
       font-size: 12px;
-      color: #8B6914;
+      color: #557a6e;
       position: relative;
       z-index: 1;
     }
@@ -208,7 +201,9 @@ function generateRecipeHtml(recipe) {
 
     .brand {
       margin-top: 5px;
-      color: #B08C5C;
+      font-family: 'Patrick Hand', cursive;
+      font-size: 16px;
+      color: #c23b3b;
     }
 
     @media print {

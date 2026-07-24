@@ -7,49 +7,63 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Wicker/Picnic basket theme
-        cream: '#FEF9F3',
-        'cream-dark': '#F7EDE2',
+        // Nana's kitchen — seafoam walls, enamel white, cherry pot red
+        // (intentionally not cream + terracotta)
+        cream: '#EEF5F2',
+        'cream-dark': '#DCEAE4',
         wicker: {
-          50: '#FDF8F0',
-          100: '#F9EDDB',
-          200: '#F0D9B5',
-          300: '#E4C088',
-          400: '#D4A55A',
-          500: '#C08B3F',
-          600: '#A67032',
-          700: '#845626',
-          800: '#6B451F',
-          900: '#4A3118',
+          50: '#F7FBFA',
+          100: '#E8F2EE',
+          200: '#C5D9D0',
+          300: '#9BBDB0',
+          400: '#6F9A8C',
+          500: '#557A6E',
+          600: '#446358',
+          700: '#374F46',
+          800: '#2A3C36',
+          900: '#1C2924',
         },
-        // Classic red gingham accent
         gingham: {
-          light: '#F5E1E1',
-          DEFAULT: '#C94C4C',
-          dark: '#9A3535',
+          light: '#F9E6E6',
+          DEFAULT: '#C23B3B',
+          dark: '#8F2A2A',
         },
-        // Natural greens for fresh accents
         herb: {
-          light: '#E8F0E4',
-          DEFAULT: '#5B7F52',
-          dark: '#3D5436',
+          light: '#E4F0E8',
+          DEFAULT: '#4F7A5C',
+          dark: '#355340',
         },
+        butter: {
+          light: '#FFF6D9',
+          DEFAULT: '#F5D978',
+          dark: '#D4B44A',
+        },
+        enamel: '#FFFEFA',
       },
       fontFamily: {
-        serif: ['Georgia', 'Cambria', 'Times New Roman', 'serif'],
-        hand: ['Caveat', 'cursive'],
+        sans: ['Nunito', 'ui-rounded', 'system-ui', 'sans-serif'],
+        serif: ['Nunito', 'ui-rounded', 'system-ui', 'sans-serif'],
+        hand: ['"Patrick Hand"', 'Kalam', 'cursive'],
+        card: ['"Special Elite"', 'Courier New', 'monospace'],
       },
       boxShadow: {
-        'card': '0 2px 8px -2px rgba(74, 49, 24, 0.15), 0 1px 3px -1px rgba(74, 49, 24, 0.1)',
-        'card-hover': '0 8px 20px -4px rgba(74, 49, 24, 0.15), 0 4px 8px -2px rgba(74, 49, 24, 0.08)',
+        card: '2px 3px 0 rgba(28, 41, 36, 0.08), 0 8px 18px -10px rgba(28, 41, 36, 0.25)',
+        'card-hover': '3px 5px 0 rgba(28, 41, 36, 0.1), 0 14px 28px -12px rgba(28, 41, 36, 0.3)',
+        paper: '1px 1px 0 #d4cfc4, 3px 3px 0 rgba(28, 41, 36, 0.06)',
       },
-      backgroundImage: {
-        'gingham-pattern': `
-          linear-gradient(45deg, #F5E1E1 25%, transparent 25%),
-          linear-gradient(-45deg, #F5E1E1 25%, transparent 25%),
-          linear-gradient(45deg, transparent 75%, #F5E1E1 75%),
-          linear-gradient(-45deg, transparent 75%, #F5E1E1 75%)
-        `,
+      keyframes: {
+        'fade-up': {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'soft-settle': {
+          '0%': { transform: 'rotate(-1.2deg)' },
+          '100%': { transform: 'rotate(-0.4deg)' },
+        },
+      },
+      animation: {
+        'fade-up': 'fade-up 0.45s ease-out both',
+        'soft-settle': 'soft-settle 0.6s ease-out both',
       },
     },
   },

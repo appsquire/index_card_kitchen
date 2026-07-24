@@ -13,19 +13,19 @@ export default function RecipeCardPrint({ recipe, size = 'full' }) {
     return (
       <div className="recipe-card max-w-2xl mx-auto print:max-w-none print:mx-0">
         {/* Header with vintage border */}
-        <div className="border-b-2 border-wicker-300 pb-4 mb-6">
-          <h1 className="font-serif text-3xl text-wicker-800 text-center">
+        <div className="border-b-2 border-gingham/40 pb-4 mb-6">
+          <h1 className="font-hand text-4xl text-wicker-900 text-center leading-tight">
             {recipe.title}
           </h1>
 
           {recipe.description && (
-            <p className="mt-2 text-center text-wicker-600 italic">
+            <p className="mt-2 text-center text-wicker-600 italic font-card text-sm">
               {recipe.description}
             </p>
           )}
 
           {/* Meta info */}
-          <div className="mt-4 flex justify-center gap-6 text-sm text-wicker-600">
+          <div className="mt-4 flex justify-center gap-6 text-sm text-wicker-600 font-semibold">
             {totalTime > 0 && (
               <span className="flex items-center gap-1">
                 <Clock className="w-4 h-4" />
@@ -44,7 +44,7 @@ export default function RecipeCardPrint({ recipe, size = 'full' }) {
         <div className="grid md:grid-cols-2 gap-8">
           {/* Ingredients */}
           <div>
-            <h2 className="font-serif text-xl text-wicker-800 border-b border-wicker-200 pb-1 mb-4">
+            <h2 className="font-hand text-2xl text-wicker-900 border-b border-wicker-200 pb-1 mb-4">
               Ingredients
             </h2>
             <ul className="space-y-2">
@@ -59,7 +59,7 @@ export default function RecipeCardPrint({ recipe, size = 'full' }) {
 
           {/* Instructions */}
           <div>
-            <h2 className="font-serif text-xl text-wicker-800 border-b border-wicker-200 pb-1 mb-4">
+            <h2 className="font-hand text-2xl text-wicker-900 border-b border-wicker-200 pb-1 mb-4">
               Instructions
             </h2>
             <ol className="space-y-4">
@@ -86,7 +86,7 @@ export default function RecipeCardPrint({ recipe, size = 'full' }) {
         )}
 
         {/* Footer */}
-        <div className="mt-4 text-center text-xs text-wicker-400">
+        <div className="mt-4 text-center font-hand text-base text-wicker-500">
           Index Card Kitchen
         </div>
       </div>
@@ -104,7 +104,7 @@ export default function RecipeCardPrint({ recipe, size = 'full' }) {
         padding: '0.5in',
       }}
     >
-      <h1 className="font-serif text-lg text-wicker-800 border-b border-wicker-300 pb-1 mb-2">
+      <h1 className="font-hand text-xl text-wicker-900 border-b border-gingham/40 pb-1 mb-2 leading-tight">
         {recipe.title}
       </h1>
 

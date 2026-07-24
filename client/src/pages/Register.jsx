@@ -49,11 +49,11 @@ export default function Register() {
   return (
     <div className="max-w-md mx-auto">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-serif font-bold text-wicker-800 mb-2">
-          Create Your Account
+        <h1 className="text-4xl text-wicker-900 mb-2">
+          Pull up a chair
         </h1>
         <p className="text-wicker-600">
-          Save and sync your recipes across all your devices
+          Make an account so your cards aren&apos;t stuck on one counter
         </p>
       </div>
 

@@ -59,7 +59,7 @@ export default function SearchBar({ onSearch, selectedCategory, onCategoryChange
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => onCategoryChange(null)}
-              className={`px-3 py-1.5 text-sm rounded-full transition-colors ${
+              className={`px-3 py-1.5 text-sm rounded-sm font-semibold transition-colors ${
                 !selectedCategory
                   ? 'bg-gingham text-white'
                   : 'bg-wicker-100 text-wicker-600 hover:bg-wicker-200'
@@ -71,7 +71,7 @@ export default function SearchBar({ onSearch, selectedCategory, onCategoryChange
               <button
                 key={category.id}
                 onClick={() => onCategoryChange(category.id)}
-                className={`px-3 py-1.5 text-sm rounded-full transition-colors ${
+                className={`px-3 py-1.5 text-sm rounded-sm font-semibold transition-colors ${
                   selectedCategory === category.id
                     ? 'bg-gingham text-white'
                     : 'bg-wicker-100 text-wicker-600 hover:bg-wicker-200'
@@ -79,7 +79,7 @@ export default function SearchBar({ onSearch, selectedCategory, onCategoryChange
                 style={
                   selectedCategory === category.id
                     ? {}
-                    : { borderLeft: `3px solid ${category.color || '#B08C5C'}` }
+                    : { borderLeft: `3px solid ${category.color || '#C23B3B'}` }
                 }
               >
                 {category.name}

@@ -26,7 +26,11 @@ router.post('/import', async (req, res, next) => {
     res.json(recipeData)
   } catch (error) {
     console.error('Import error:', error)
-    if (error.message.includes('fetch') || error.message.includes('timeout')) {
+    if (
+      error.message?.includes('access the URL') ||
+      error.message?.includes('timeout') ||
+      error.message?.includes('net::')
+    ) {
       return res.status(400).json({
         message: 'Could not access the URL. Please check the link and try again.',
       })
