@@ -1,148 +1,167 @@
-import { Clock, Users, ExternalLink } from 'lucide-react'
+import { useMemo } from 'react'
 
-export default function RecipeCardPrint({ recipe, size = 'full' }) {
-  const totalTime = (recipe.prepTime || 0) + (recipe.cookTime || 0)
+const SIZE_STYLES = {
+  '4x6': { width: '6in', height: '4in', className: 'text-[10.5px]' },
+  '5x7': { width: '7in', height: '5in', className: 'text-[11.5px]' },
+  letter: { width: '8.5in', height: '11in', className: 'text-[13px]' },
+}
 
-  const formatIngredient = (ing) => {
-    const parts = [ing.amount, ing.unit, ing.name].filter(Boolean)
-    return parts.join(' ')
+function formatIngredient(ing) {
+  return [ing.amount, ing.unit, ing.name].filter(Boolean).join(' ')
+}
+
+function safeHostname(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return null
   }
+}
 
-  // Full page recipe card
-  if (size === 'full') {
-    return (
-      <div className="recipe-card max-w-2xl mx-auto print:max-w-none print:mx-0">
-        {/* Header with vintage border */}
-        <div className="border-b-2 border-gingham/40 pb-4 mb-6">
-          <h1 className="font-hand text-4xl text-wicker-900 text-center leading-tight">
-            {recipe.title}
-          </h1>
+export default function RecipeCardPrint({
+  recipe,
+  size = '4x6',
+  style = 'lined',
+  layout = 'split',
+  side = 'front',
+  className = '',
+}) {
+  const totalTime = (recipe.prepTime || 0) + (recipe.cookTime || 0)
+  const dims = SIZE_STYLES[size] || SIZE_STYLES['4x6']
+  const source = recipe.sourceUrl ? safeHostname(recipe.sourceUrl) : null
 
-          {recipe.description && (
-            <p className="mt-2 text-center text-wicker-600 italic font-card text-sm">
-              {recipe.description}
-            </p>
+  const ingredients = recipe.ingredients?.filter((i) => i?.name?.trim()) || []
+  const instructions = recipe.instructions?.filter((i) => i?.step?.trim()) || []
+
+  const { frontIngredients, frontInstructions, backIngredients, backInstructions, needsBack } =
+    useMemo(() => {
+      if (size === 'letter' || layout === 'stacked') {
+        return {
+          frontIngredients: ingredients,
+          frontInstructions: instructions,
+          backIngredients: [],
+          backInstructions: [],
+          needsBack: false,
+        }
+      }
+
+      const ingLimit = size === '4x6' ? 10 : 14
+      const stepLimit = size === '4x6' ? 6 : 8
+      const overflow =
+        ingredients.length > ingLimit || instructions.length > stepLimit
+
+      if (!overflow) {
+        return {
+          frontIngredients: ingredients,
+          frontInstructions: instructions,
+          backIngredients: [],
+          backInstructions: [],
+          needsBack: false,
+        }
+      }
+
+      return {
+        frontIngredients: ingredients.slice(0, ingLimit),
+        frontInstructions: instructions.slice(0, stepLimit),
+        backIngredients: ingredients.slice(ingLimit),
+        backInstructions: instructions.slice(stepLimit),
+        needsBack: true,
+      }
+    }, [ingredients, instructions, size, layout])
+
+  const showingBack = side === 'back' && needsBack
+  const shownIngredients = showingBack ? backIngredients : frontIngredients
+  const shownInstructions = showingBack ? backInstructions : frontInstructions
+
+  const metaBits = [
+    totalTime > 0 ? `${totalTime} min` : null,
+    recipe.prepTime > 0 ? `prep ${recipe.prepTime}` : null,
+    recipe.cookTime > 0 ? `cook ${recipe.cookTime}` : null,
+    recipe.servings ? `serves ${recipe.servings}` : null,
+  ].filter(Boolean)
+
+  return (
+    <article
+      data-card-side={showingBack ? 'back' : 'front'}
+      className={[
+        'index-card',
+        `index-card--${style}`,
+        `index-card--${layout}`,
+        dims.className,
+        className,
+      ].join(' ')}
+      style={{ width: dims.width, height: dims.height }}
+    >
+      <div className="index-card__inner">
+        <header className="index-card__header">
+          <p className="index-card__eyebrow">
+            {showingBack ? 'Continued…' : 'Recipe card'}
+          </p>
+          <h1 className="index-card__title">{recipe.title}</h1>
+          {!showingBack && recipe.description && size !== '4x6' && (
+            <p className="index-card__blurb">{recipe.description}</p>
+          )}
+          {!showingBack && metaBits.length > 0 && (
+            <div className="index-card__meta">
+              {metaBits.map((bit) => (
+                <span key={bit}>{bit}</span>
+              ))}
+            </div>
+          )}
+        </header>
+
+        <div className={`index-card__body index-card__body--${layout}`}>
+          {shownIngredients.length > 0 && (
+            <section className="index-card__section">
+              <h2>Ingredients</h2>
+              <ul>
+                {shownIngredients.map((ing, idx) => (
+                  <li key={idx}>
+                    <span className="index-card__tick">□</span>
+                    <span>{formatIngredient(ing)}</span>
+                  </li>
+                ))}
+              </ul>
+              {!showingBack && needsBack && ingredients.length > frontIngredients.length && (
+                <p className="index-card__more">+ more on the back</p>
+              )}
+            </section>
           )}
 
-          {/* Meta info */}
-          <div className="mt-4 flex justify-center gap-6 text-sm text-wicker-600 font-semibold">
-            {totalTime > 0 && (
-              <span className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                {totalTime} minutes
-              </span>
-            )}
-            {recipe.servings && (
-              <span className="flex items-center gap-1">
-                <Users className="w-4 h-4" />
-                Serves {recipe.servings}
-              </span>
-            )}
-          </div>
+          {shownInstructions.length > 0 && (
+            <section className="index-card__section">
+              <h2>Method</h2>
+              <ol>
+                {shownInstructions.map((inst, idx) => {
+                  const number = showingBack
+                    ? frontInstructions.length + idx + 1
+                    : idx + 1
+                  return (
+                    <li key={idx}>
+                      <span className="index-card__num">{number}</span>
+                      <span>{inst.step}</span>
+                    </li>
+                  )
+                })}
+              </ol>
+              {!showingBack && needsBack && instructions.length > frontInstructions.length && (
+                <p className="index-card__more">+ more on the back</p>
+              )}
+            </section>
+          )}
+
+          {showingBack && shownIngredients.length === 0 && shownInstructions.length === 0 && (
+            <p className="index-card__blurb">Nothing left for the back — this recipe fits up front.</p>
+          )}
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Ingredients */}
-          <div>
-            <h2 className="font-hand text-2xl text-wicker-900 border-b border-wicker-200 pb-1 mb-4">
-              Ingredients
-            </h2>
-            <ul className="space-y-2">
-              {recipe.ingredients?.map((ing, idx) => (
-                <li key={idx} className="flex items-start gap-2 text-wicker-700">
-                  <span className="text-gingham">•</span>
-                  <span>{formatIngredient(ing)}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Instructions */}
-          <div>
-            <h2 className="font-hand text-2xl text-wicker-900 border-b border-wicker-200 pb-1 mb-4">
-              Instructions
-            </h2>
-            <ol className="space-y-4">
-              {recipe.instructions?.map((inst, idx) => (
-                <li key={idx} className="flex gap-3 text-wicker-700">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gingham text-white flex items-center justify-center text-sm">
-                    {idx + 1}
-                  </span>
-                  <span>{inst.step}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
-
-        {/* Source attribution */}
-        {recipe.sourceUrl && (
-          <div className="mt-8 pt-4 border-t border-wicker-200 text-center text-sm text-wicker-500">
-            <span className="flex items-center justify-center gap-1">
-              <ExternalLink className="w-3 h-3" />
-              Source: {new URL(recipe.sourceUrl).hostname}
-            </span>
-          </div>
-        )}
-
-        {/* Footer */}
-        <div className="mt-4 text-center font-hand text-base text-wicker-500">
-          Index Card Kitchen
-        </div>
+        <footer className="index-card__footer">
+          <span>{source ? `From ${source}` : 'Homemade'}</span>
+          <span>Index Card Kitchen</span>
+        </footer>
       </div>
-    )
-  }
-
-  // Index card style (4x6)
-  return (
-    <div
-      className="recipe-card"
-      style={{
-        width: '6in',
-        minHeight: '4in',
-        fontSize: '10pt',
-        padding: '0.5in',
-      }}
-    >
-      <h1 className="font-hand text-xl text-wicker-900 border-b border-gingham/40 pb-1 mb-2 leading-tight">
-        {recipe.title}
-      </h1>
-
-      <div className="flex gap-4 text-xs text-wicker-500 mb-3">
-        {totalTime > 0 && <span>{totalTime} min</span>}
-        {recipe.servings && <span>Serves {recipe.servings}</span>}
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <h3 className="font-semibold text-wicker-700 mb-1">Ingredients</h3>
-          <ul className="space-y-0.5">
-            {recipe.ingredients?.slice(0, 12).map((ing, idx) => (
-              <li key={idx} className="text-wicker-600 text-xs">
-                • {formatIngredient(ing)}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div>
-          <h3 className="font-semibold text-wicker-700 mb-1">Instructions</h3>
-          <ol className="space-y-1">
-            {recipe.instructions?.slice(0, 8).map((inst, idx) => (
-              <li key={idx} className="text-wicker-600 text-xs">
-                {idx + 1}. {inst.step.slice(0, 100)}
-                {inst.step.length > 100 ? '...' : ''}
-              </li>
-            ))}
-          </ol>
-        </div>
-      </div>
-
-      {recipe.sourceUrl && (
-        <div className="absolute bottom-2 right-4 text-xs text-wicker-400">
-          {new URL(recipe.sourceUrl).hostname}
-        </div>
-      )}
-    </div>
+    </article>
   )
 }
+
+export { SIZE_STYLES }

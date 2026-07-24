@@ -331,7 +331,8 @@ router.post('/:id/export', async (req, res, next) => {
       instructions: row.instructions,
     }
 
-    const pdfBuffer = await generateRecipePdf(recipe)
+    const { size, style, layout } = req.body || {}
+    const pdfBuffer = await generateRecipePdf(recipe, { size, style, layout })
 
     res.setHeader('Content-Type', 'application/pdf')
     res.setHeader(
