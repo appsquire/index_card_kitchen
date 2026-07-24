@@ -5,7 +5,13 @@ import { useRecipes } from '../context/RecipeContext'
 const emptyIngredient = { amount: '', unit: '', name: '' }
 const emptyInstruction = { step: '' }
 
-export default function RecipeForm({ initialData, onSubmit, loading }) {
+export default function RecipeForm({
+  initialData,
+  onSubmit,
+  loading,
+  submitLabel = 'Save Recipe',
+  loadingLabel = 'Saving…',
+}) {
   const { categories } = useRecipes()
   const [formData, setFormData] = useState({
     title: '',
@@ -344,8 +350,8 @@ export default function RecipeForm({ initialData, onSubmit, loading }) {
 
       {/* Submit */}
       <div className="flex justify-end gap-4">
-        <button type="submit" className="btn-primary px-8" disabled={loading}>
-          {loading ? 'Saving...' : 'Save Recipe'}
+        <button type="submit" className="btn-primary px-8 flex items-center gap-2" disabled={loading}>
+          {loading ? loadingLabel : submitLabel}
         </button>
       </div>
     </form>

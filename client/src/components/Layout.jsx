@@ -36,13 +36,7 @@ export default function Layout() {
                 className="flex items-center gap-1 hover:text-gingham transition-colors"
               >
                 <Plus className="w-4 h-4" />
-                Add Recipe
-              </Link>
-              <Link
-                to="/recipe/import"
-                className="hover:text-gingham transition-colors"
-              >
-                Import from URL
+                Add recipe
               </Link>
               <Link
                 to="/categories"
@@ -96,13 +90,6 @@ export default function Layout() {
             >
               <Plus className="w-5 h-5" />
               Add
-            </Link>
-            <Link
-              to="/recipe/import"
-              className="flex flex-col items-center text-xs text-wicker-600 font-semibold"
-            >
-              <Cloud className="w-5 h-5" />
-              Import
             </Link>
             <Link
               to="/categories"

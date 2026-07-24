@@ -1,64 +1,69 @@
 import { Link } from 'react-router-dom'
 import { Clock, Users } from 'lucide-react'
 
+function tiltFromId(id) {
+  const s = String(id || 'x')
+  let h = 0
+  for (let i = 0; i < s.length; i += 1) h = (h * 31 + s.charCodeAt(i)) | 0
+  const tilts = [-2.4, -1.5, -0.7, 0.5, 1.3, 2.2]
+  return tilts[Math.abs(h) % tilts.length]
+}
+
+function tabColorFromId(id) {
+  const colors = ['#c23b3b', '#4f7a5c', '#d4b44a', '#6f9a8c', '#8f2a2a']
+  const s = String(id || 'x')
+  let h = 0
+  for (let i = 0; i < s.length; i += 1) h = (h * 17 + s.charCodeAt(i)) | 0
+  return colors[Math.abs(h) % colors.length]
+}
+
 export default function RecipeCard({ recipe }) {
   const totalTime = (recipe.prepTime || 0) + (recipe.cookTime || 0)
+  const tilt = tiltFromId(recipe.id)
+  const tab = tabColorFromId(recipe.id)
+  const category = recipe.categoryNames?.[0]
 
   return (
-    <Link to={`/recipe/${recipe.id}`} className="block group animate-fade-up">
-      <article className="card card-hover overflow-hidden p-0 border-2 border-wicker-200">
-        <div className="index-thumb aspect-[4/3] -rotate-[0.4deg] group-hover:rotate-0 transition-transform duration-300">
+    <Link
+      to={`/recipe/${recipe.id}`}
+      className="recipe-box-card group"
+      style={{ '--tilt': `${tilt}deg`, '--tab': tab }}
+    >
+      <span className="recipe-box-card__tab" aria-hidden>
+        {category ? category.slice(0, 10) : 'Recipe'}
+      </span>
+
+      <article className="recipe-box-card__face">
+        <div className="recipe-box-card__photo">
           {recipe.imageUrl ? (
-            <img
-              src={recipe.imageUrl}
-              alt={recipe.title}
-              className="w-full h-full object-cover mix-blend-multiply opacity-95"
-            />
+            <img src={recipe.imageUrl} alt="" className="recipe-box-card__img" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center px-6">
-              <p className="font-hand text-2xl text-center text-wicker-500 leading-tight">
-                {recipe.title}
-              </p>
+            <div className="recipe-box-card__lines" aria-hidden>
+              <span />
+              <span />
+              <span />
             </div>
           )}
         </div>
 
-        <div className="p-5">
-          <h3 className="font-hand text-2xl text-wicker-900 group-hover:text-gingham transition-colors line-clamp-2 leading-tight">
-            {recipe.title}
-          </h3>
+        <div className="recipe-box-card__body">
+          <p className="recipe-box-card__label">From the box</p>
+          <h3 className="recipe-box-card__title">{recipe.title}</h3>
 
-          {recipe.description && (
-            <p className="mt-2 text-sm text-wicker-600 line-clamp-2 leading-relaxed">
-              {recipe.description}
-            </p>
-          )}
-
-          <div className="mt-4 flex items-center gap-4 text-sm text-wicker-500 font-semibold">
-            {totalTime > 0 && (
-              <span className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                {totalTime} min
-              </span>
-            )}
-            {recipe.servings && (
-              <span className="flex items-center gap-1">
-                <Users className="w-4 h-4" />
-                Serves {recipe.servings}
-              </span>
-            )}
-          </div>
-
-          {recipe.categoryIds?.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {recipe.categoryNames?.slice(0, 3).map((name, idx) => (
-                <span
-                  key={idx}
-                  className="px-2 py-0.5 text-xs font-semibold bg-herb-light text-herb-dark border border-herb/20 rounded-sm"
-                >
-                  {name}
+          {(totalTime > 0 || recipe.servings) && (
+            <div className="recipe-box-card__meta">
+              {totalTime > 0 && (
+                <span>
+                  <Clock className="w-3.5 h-3.5" />
+                  {totalTime} min
                 </span>
-              ))}
+              )}
+              {recipe.servings && (
+                <span>
+                  <Users className="w-3.5 h-3.5" />
+                  {recipe.servings}
+                </span>
+              )}
             </div>
           )}
         </div>
