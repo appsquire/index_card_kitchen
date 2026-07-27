@@ -1,7 +1,7 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useRecipes } from '../context/RecipeContext'
-import { copyrightNotice } from '../data/legal'
+import { APP_NAME, copyrightNotice, FOOTER_TAGLINE } from '../data/legal'
 import { Plus, LogIn, LogOut, User, FolderOpen, Cloud } from 'lucide-react'
 
 export default function Layout() {
@@ -118,48 +118,45 @@ export default function Layout() {
         </div>
       )}
 
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-fade-up">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-10 sm:pb-14 animate-fade-up">
         <Outlet />
       </main>
 
       <footer className="site-footer mt-auto">
         <div className="site-footer__inner">
           <p className="site-footer__tagline">
-            Index Card Kitchen — come hungry, leave with a card
+            <span className="site-footer__brand">{APP_NAME}</span>
+            <span className="site-footer__tagline-sep" aria-hidden>
+              {' '}
+              —{' '}
+            </span>
+            <span className="site-footer__tagline-text">{FOOTER_TAGLINE}</span>
           </p>
-
-          <p className="site-footer__legal">
-            <Link to="/terms">Terms</Link>
-            <span aria-hidden> · </span>
-            <Link to="/privacy">Privacy</Link>
-          </p>
-
-          <div className="site-footer__rule" aria-hidden />
 
           <a
             href="https://www.appsquire.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="site-footer__credit group"
+            className="site-footer__credit"
             aria-label="Built by AppSquire — visit appsquire.com"
           >
-            <span className="site-footer__stamp" aria-hidden>
-              Launch Lab
-            </span>
-            <span className="site-footer__credit-text">
-              <span className="site-footer__credit-lead">Filed &amp; built by</span>
-              <span className="site-footer__credit-brand">
-                <span className="site-footer__credit-name">appsquire</span>
-                <span className="site-footer__credit-consulting">consulting</span>
-              </span>
-              <span className="site-footer__credit-meta">Edmonton, AB · Custom software</span>
-            </span>
-            <span className="site-footer__credit-arrow" aria-hidden>
-              →
-            </span>
+            <img
+              src="/appsquire-logo.png"
+              alt=""
+              className="site-footer__credit-logo"
+              width={402}
+              height={100}
+            />
           </a>
 
-          <p className="site-footer__copyright">{copyrightNotice()}</p>
+          <div className="site-footer__meta">
+            <p className="site-footer__legal">
+              <Link to="/terms">Terms</Link>
+              <span aria-hidden> · </span>
+              <Link to="/privacy">Privacy</Link>
+            </p>
+            <p className="site-footer__copyright">{copyrightNotice()}</p>
+          </div>
         </div>
       </footer>
     </div>

@@ -167,9 +167,6 @@ export default function Home() {
             </div>
           ) : (
             <div className="recipe-box__grid">
-              {filteredRecipes.map((recipe) => (
-                <RecipeCard key={recipe.id} recipe={recipe} />
-              ))}
               <Link to="/recipe/new" className="recipe-box-card recipe-box-card--add">
                 <span className="recipe-box-card__tab" aria-hidden>
                   New
@@ -180,6 +177,9 @@ export default function Home() {
                   <p className="text-sm text-wicker-600 mt-2">Handwritten or from a link</p>
                 </article>
               </Link>
+              {filteredRecipes.map((recipe) => (
+                <RecipeCard key={recipe.id} recipe={recipe} />
+              ))}
             </div>
           )}
         </div>

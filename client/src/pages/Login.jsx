@@ -38,7 +38,7 @@ export default function Login() {
     <div className="max-w-md mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-4xl text-wicker-900 mb-2">
-          Welcome back, hon
+          Welcome back
         </h1>
         <p className="text-wicker-600">
           Sign in so the recipe box follows you around

@@ -1,7 +1,6 @@
 import LegalLayout, { LegalSection } from '../components/LegalLayout'
-import { copyrightNotice, copyrightYear } from '../data/legal'
+import { CONTACT_EMAIL, copyrightNotice, copyrightYear } from '../data/legal'
 
-const CONTACT = 'hello@indexcardkitchen.com'
 const LAST_UPDATED = `July 27, ${copyrightYear()}`
 
 export default function Privacy() {
@@ -63,8 +62,8 @@ export default function Privacy() {
         <p>
           We keep account and recipe data while your account is active. You can delete individual
           recipes in the app. To delete your account and associated cloud data, contact us at{' '}
-          <a href={`mailto:${CONTACT}`} className="text-gingham hover:underline">
-            {CONTACT}
+          <a href={`mailto:${CONTACT_EMAIL}`} className="text-gingham hover:underline">
+            {CONTACT_EMAIL}
           </a>
           .
         </p>
@@ -95,8 +94,8 @@ export default function Privacy() {
       <LegalSection title="Contact">
         <p>
           Privacy questions:{' '}
-          <a href={`mailto:${CONTACT}`} className="text-gingham hover:underline">
-            {CONTACT}
+          <a href={`mailto:${CONTACT_EMAIL}`} className="text-gingham hover:underline">
+            {CONTACT_EMAIL}
           </a>
         </p>
         <p className="text-sm text-wicker-500 mt-3">{copyrightNotice()}</p>

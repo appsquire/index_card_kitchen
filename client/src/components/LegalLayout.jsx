@@ -21,16 +21,6 @@ export default function LegalLayout({ title, lastUpdated, children }) {
         </header>
         {children}
       </article>
-
-      <p className="mt-6 text-center text-sm text-wicker-600">
-        <Link to="/terms" className="text-gingham hover:underline font-medium">
-          Terms of Service
-        </Link>
-        {' · '}
-        <Link to="/privacy" className="text-gingham hover:underline font-medium">
-          Privacy Policy
-        </Link>
-      </p>
     </div>
   )
 }

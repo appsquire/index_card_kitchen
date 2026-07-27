@@ -13,14 +13,26 @@ export function RecipeProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
 
+  // Upload local-only recipes to the cloud (runs after login/register).
+  const uploadUnsyncedRecipes = async () => {
+    if (!localStorage.getItem('token')) return
+
+    const unsyncedRecipes = await localDb.getUnsyncedRecipes()
+    for (const recipe of unsyncedRecipes) {
+      const { synced, ...recipeData } = recipe
+      await recipeApi.create(recipeData)
+      await localDb.markSynced(recipe.id)
+    }
+  }
+
   // Load recipes from local DB or API
   const loadRecipes = useCallback(async () => {
     setLoading(true)
     try {
       if (isAuthenticated) {
+        await uploadUnsyncedRecipes()
         const cloudRecipes = await recipeApi.getAll()
         setRecipes(cloudRecipes)
-        // Sync local recipes to IndexedDB as cache
         await localDb.syncRecipes(cloudRecipes)
       } else {
         // Drop cloud cache from a previous session — logged-out view is local-only.
@@ -31,7 +43,8 @@ export function RecipeProvider({ children }) {
     } catch (error) {
       console.error('Failed to load recipes:', error)
       const localRecipes = await localDb.getAllRecipes()
-      setRecipes(localRecipes.filter((r) => !r.synced))
+      // Offline or API error — show everything we still have cached locally.
+      setRecipes(localRecipes)
     } finally {
       setLoading(false)
     }
@@ -65,22 +78,16 @@ export function RecipeProvider({ children }) {
     loadCategories()
   }, [loadRecipes, loadCategories, user])
 
-  // Sync local recipes to cloud when user logs in
+  // Sync local recipes to cloud when user logs in (token may exist before React re-renders).
   const syncToCloud = async () => {
-    if (!isAuthenticated) return
+    if (!localStorage.getItem('token')) return
 
     setSyncing(true)
     try {
-      const localRecipes = await localDb.getAllRecipes()
-      const unsyncedRecipes = localRecipes.filter(r => !r.synced)
-
-      for (const recipe of unsyncedRecipes) {
-        const { synced, ...recipeData } = recipe
-        await recipeApi.create(recipeData)
-        await localDb.markSynced(recipe.id)
-      }
-
-      await loadRecipes()
+      await uploadUnsyncedRecipes()
+      const cloudRecipes = await recipeApi.getAll()
+      setRecipes(cloudRecipes)
+      await localDb.syncRecipes(cloudRecipes)
     } catch (error) {
       console.error('Sync failed:', error)
     } finally {

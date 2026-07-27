@@ -1,7 +1,6 @@
 import LegalLayout, { LegalSection } from '../components/LegalLayout'
-import { COPYRIGHT_OWNER, copyrightYear } from '../data/legal'
+import { CONTACT_EMAIL, COPYRIGHT_OWNER, copyrightYear } from '../data/legal'
 
-const CONTACT = 'hello@indexcardkitchen.com'
 const LAST_UPDATED = `July 27, ${copyrightYear()}`
 
 export default function Terms() {
@@ -50,8 +49,8 @@ export default function Terms() {
         </p>
         <p>
           If you believe content stored through our service infringes your copyright, email{' '}
-          <a href={`mailto:${CONTACT}`} className="text-gingham hover:underline">
-            {CONTACT}
+          <a href={`mailto:${CONTACT_EMAIL}`} className="text-gingham hover:underline">
+            {CONTACT_EMAIL}
           </a>{' '}
           with:
         </p>
@@ -91,7 +90,7 @@ export default function Terms() {
       <LegalSection title="Our content">
         <p>
           Index Card Kitchen, including its name, design, and software, is © {copyrightYear()}{' '}
-          {COPYRIGHT_OWNER}. All rights reserved. Recipe content you import or enter remains
+          {COPYRIGHT_OWNER} All rights reserved. Recipe content you import or enter remains
           yours; we do not claim ownership of your recipes.
         </p>
       </LegalSection>
@@ -106,8 +105,8 @@ export default function Terms() {
       <LegalSection title="Contact">
         <p>
           Questions about these terms:{' '}
-          <a href={`mailto:${CONTACT}`} className="text-gingham hover:underline">
-            {CONTACT}
+          <a href={`mailto:${CONTACT_EMAIL}`} className="text-gingham hover:underline">
+            {CONTACT_EMAIL}
           </a>
         </p>
       </LegalSection>
