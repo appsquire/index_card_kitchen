@@ -8,6 +8,8 @@ import ImportRecipe from './pages/ImportRecipe'
 import Categories from './pages/Categories'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import Terms from './pages/Terms'
+import Privacy from './pages/Privacy'
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
         <Route path="categories" element={<Categories />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
+        <Route path="terms" element={<Terms />} />
+        <Route path="privacy" element={<Privacy />} />
       </Route>
     </Routes>
   )

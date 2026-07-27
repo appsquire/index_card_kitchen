@@ -9,6 +9,7 @@ export default function Register() {
   const { register, isAuthenticated } = useAuth()
   const { syncToCloud, recipes } = useRecipes()
   const [formData, setFormData] = useState({ name: '', email: '', password: '', confirmPassword: '' })
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -31,6 +32,11 @@ export default function Register() {
 
     if (formData.password.length < 8) {
       setError('Password must be at least 8 characters')
+      return
+    }
+
+    if (!acceptedTerms) {
+      setError('Please agree to the Terms of Service and Privacy Policy')
       return
     }
 
@@ -154,9 +160,29 @@ export default function Register() {
             </div>
           </div>
 
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-1 rounded border-wicker-300 text-gingham focus:ring-gingham"
+              required
+            />
+            <span className="text-sm text-wicker-600 leading-snug">
+              I agree to the{' '}
+              <Link to="/terms" className="text-gingham hover:underline font-medium">
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link to="/privacy" className="text-gingham hover:underline font-medium">
+                Privacy Policy
+              </Link>
+            </span>
+          </label>
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !acceptedTerms}
             className="btn-primary w-full"
           >
             {loading ? 'Creating account...' : 'Create Account'}

@@ -123,8 +123,17 @@ export default function Layout() {
 
       <footer className="mt-16 border-t-2 border-wicker-200/80 bg-enamel/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <p className="text-center font-hand text-xl text-wicker-600">
+          <p className="text-center font-hand text-xl text-wicker-600 mb-3">
             Index Card Kitchen — come hungry, leave with a card
+          </p>
+          <p className="text-center text-sm text-wicker-500">
+            <Link to="/terms" className="hover:text-gingham transition-colors">
+              Terms
+            </Link>
+            {' · '}
+            <Link to="/privacy" className="hover:text-gingham transition-colors">
+              Privacy
+            </Link>
           </p>
         </div>
       </footer>

@@ -182,6 +182,14 @@ export default function RecipeNew() {
           <p className="mt-3 text-sm text-wicker-600">
             Works with AllRecipes, Food Network, Serious Eats, and most sites that mark up recipes.
           </p>
+          <p className="mt-2 text-xs text-wicker-500 leading-relaxed">
+            Import for your personal kitchen only. You&apos;re responsible for how you use imported
+            content — we link to the original when we can. See our{' '}
+            <Link to="/terms" className="text-gingham hover:underline">
+              Terms
+            </Link>
+            .
+          </p>
         </div>
       )}
 
