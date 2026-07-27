@@ -23,14 +23,15 @@ export function RecipeProvider({ children }) {
         // Sync local recipes to IndexedDB as cache
         await localDb.syncRecipes(cloudRecipes)
       } else {
+        // Drop cloud cache from a previous session — logged-out view is local-only.
+        await localDb.clearCloudCache()
         const localRecipes = await localDb.getAllRecipes()
-        setRecipes(localRecipes)
+        setRecipes(localRecipes.filter((r) => !r.synced))
       }
     } catch (error) {
       console.error('Failed to load recipes:', error)
-      // Fallback to local data
       const localRecipes = await localDb.getAllRecipes()
-      setRecipes(localRecipes)
+      setRecipes(localRecipes.filter((r) => !r.synced))
     } finally {
       setLoading(false)
     }

@@ -109,6 +109,19 @@ export const localDb = {
     await tx.done
   },
 
+  async clearCloudCache() {
+    const db = await getDb()
+    const recipes = await db.getAll('recipes')
+    const recipeTx = db.transaction('recipes', 'readwrite')
+    for (const recipe of recipes) {
+      if (recipe.synced) {
+        await recipeTx.store.delete(recipe.id)
+      }
+    }
+    await recipeTx.done
+    await db.clear('categories')
+  },
+
   // Clear all data
   async clearAll() {
     const db = await getDb()

@@ -248,7 +248,7 @@ function renderCardPage(recipe, { size, style, dims, plan, pageIndex }) {
   </div>`
 }
 
-function generateRecipeHtml(recipe, { size, style, dims, plan, packOntoLetter = false }) {
+export function generateRecipeHtml(recipe, { size, style, dims, plan, packOntoLetter = false }) {
   const totalPages = plan.pages?.length || 1
   const sheets = packOntoLetter
     ? packPageIndexes(totalPages, size)
