@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { authService } from '../services/auth'
 
 const AuthContext = createContext(null)
@@ -10,15 +10,27 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (token) {
-      authService.getProfile()
-        .then(userData => setUser(userData))
+      authService
+        .getProfile()
+        .then((userData) => setUser(userData))
         .catch(() => {
           localStorage.removeItem('token')
+          setUser(null)
         })
         .finally(() => setLoading(false))
     } else {
       setLoading(false)
     }
+  }, [])
+
+  // Soft logout from api 401 interceptor (avoids hard reload wiping in-flight state).
+  useEffect(() => {
+    const onForcedLogout = () => {
+      localStorage.removeItem('token')
+      setUser(null)
+    }
+    window.addEventListener('auth:logout', onForcedLogout)
+    return () => window.removeEventListener('auth:logout', onForcedLogout)
   }, [])
 
   const login = async (email, password) => {
@@ -35,10 +47,10 @@ export function AuthProvider({ children }) {
     return userData
   }
 
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem('token')
     setUser(null)
-  }
+  }, [])
 
   const value = {
     user,
@@ -49,11 +61,7 @@ export function AuthProvider({ children }) {
     logout,
   }
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

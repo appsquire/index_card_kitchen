@@ -133,28 +133,29 @@ export default function Layout() {
             <span className="site-footer__tagline-text">{FOOTER_TAGLINE}</span>
           </p>
 
-          <a
-            href="https://www.appsquire.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="site-footer__credit"
-            aria-label="Built by AppSquire — visit appsquire.com"
-          >
-            <img
-              src="/appsquire-logo.png"
-              alt=""
-              className="site-footer__credit-logo"
-              width={402}
-              height={100}
-            />
-          </a>
-
-          <div className="site-footer__meta">
+          <div className="site-footer__bar">
             <p className="site-footer__legal">
               <Link to="/terms">Terms</Link>
               <span aria-hidden> · </span>
               <Link to="/privacy">Privacy</Link>
             </p>
+
+            <a
+              href="https://www.appsquire.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="site-footer__credit"
+              aria-label="Built by AppSquire — visit appsquire.com"
+            >
+              <img
+                src="/appsquire-logo.png"
+                alt=""
+                className="site-footer__credit-logo"
+                width={402}
+                height={100}
+              />
+            </a>
+
             <p className="site-footer__copyright">{copyrightNotice()}</p>
           </div>
         </div>

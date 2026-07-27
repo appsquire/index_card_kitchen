@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Printer, Download, X, RotateCcw, Check, ImageIcon, ImageDown, Type } from 'lucide-react'
+import { Printer, Download, X, RotateCcw, Check, ImageDown, Maximize2, Share2 } from 'lucide-react'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import RecipeCardPrint, {
@@ -13,21 +13,15 @@ import RecipeCardPrint, {
 import { measureAndPackPlan } from '../utils/measureCardPlan'
 
 const SIZES = [
-  { id: '4x6', label: '4×6 recipe card', hint: 'Landscape — fits a classic recipe box', printLabel: 'Prints at 6 × 4 inches (landscape)' },
-  { id: '5x7', label: '5×7 keepsake', hint: 'A little more room to write', printLabel: 'Prints at 7 × 5 inches (landscape)' },
-  { id: 'letter', label: 'Full page', hint: 'Binder / fridge printout', printLabel: 'Prints at 8.5 × 11 inches' },
+  { id: '4x6', label: '4×6 recipe card', hint: 'Fits a classic recipe box' },
+  { id: '5x7', label: '5×7 keepsake', hint: 'A little more room to write' },
+  { id: 'letter', label: 'Full page', hint: 'Binder / fridge printout' },
 ]
 
 const SIZE_PREVIEW_CLASS = {
   '4x6': 'card-studio__preview--4x6',
   '5x7': 'card-studio__preview--5x7',
   letter: 'card-studio__preview--letter',
-}
-
-const SIZE_PHOTO_CLASS = {
-  '4x6': 'card-studio__photo-preview--4x6',
-  '5x7': 'card-studio__photo-preview--5x7',
-  letter: 'card-studio__photo-preview--letter',
 }
 
 function waitForPaint() {
@@ -55,10 +49,15 @@ function slugifyTitle(title) {
   return (title || 'recipe').replace(/[^a-z0-9]+/gi, '_')
 }
 
-function pageImageSuffix(pageIdx, totalPages) {
-  if (totalPages <= 1) return ''
-  if (totalPages === 2) return pageIdx === 0 ? '_front' : '_back'
-  return `_page_${pageIdx + 1}`
+function isMobileDevice() {
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+}
+
+function canUseDownloadAttr() {
+  // iOS Safari doesn't reliably support the download attribute
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+  return !(isIOS || (isSafari && isMobileDevice()))
 }
 
 async function captureCardElement(el) {
@@ -81,54 +80,13 @@ async function captureCardElement(el) {
   })
 }
 
-async function savePngBlob(blob, filename, shareTitle) {
-  const file = new File([blob], filename, { type: 'image/png' })
-  if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: shareTitle })
-      return 'shared'
-    } catch (err) {
-      if (err?.name === 'AbortError') return 'cancelled'
-    }
-  }
-
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  link.click()
-  URL.revokeObjectURL(url)
-  return 'downloaded'
-}
-
-function canShareImageFiles() {
-  if (typeof navigator === 'undefined' || typeof navigator.canShare !== 'function') {
-    return false
-  }
-  try {
-    const probe = new File([new Uint8Array([137, 80, 78, 71])], 'card.png', {
-      type: 'image/png',
-    })
-    return navigator.canShare({ files: [probe] })
-  } catch {
-    return false
-  }
-}
-
 const STYLES = [
   { id: 'lined', label: 'Ruled', hint: 'White card with writing lines' },
   { id: 'butter', label: 'Manila', hint: 'Warm scrap-paper yellow' },
   { id: 'enamel', label: 'Kitchen white', hint: 'Clean white, cherry script' },
 ]
 
-export default function CardStudio({
-  recipe,
-  onClose,
-  variant = 'studio',
-  initialPhotoOpen = false,
-  largeText: largeTextProp = false,
-}) {
-  const isViewMode = variant === 'view'
+export default function CardStudio({ recipe, onClose }) {
   const [size, setSize] = useState('4x6')
   const [style, setStyle] = useState('enamel')
   const [pageIndex, setPageIndex] = useState(0)
@@ -137,14 +95,14 @@ export default function CardStudio({
   const [pdfCapturing, setPdfCapturing] = useState(false)
   const [imageCapturing, setImageCapturing] = useState(false)
   const [toast, setToast] = useState(null)
-  const [photoViewOpen, setPhotoViewOpen] = useState(initialPhotoOpen)
-  const [largeText, setLargeText] = useState(largeTextProp)
-  const [showPrintOptions, setShowPrintOptions] = useState(false)
+  const [savedImage, setSavedImage] = useState(null) // { url, filename, blob }
+  const [viewerOrientKey, setViewerOrientKey] = useState(0)
   const [isPhoneLayout, setIsPhoneLayout] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 900px)').matches : false
   )
-  const [canShareImages] = useState(canShareImageFiles)
   const faceRefs = useRef([])
+  const savedImageRef = useRef(null)
+  const captureBusy = useRef(false)
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 900px)')
@@ -155,8 +113,24 @@ export default function CardStudio({
   }, [])
 
   useEffect(() => {
-    setLargeText(largeTextProp)
-  }, [largeTextProp])
+    savedImageRef.current = savedImage
+  }, [savedImage])
+
+  useEffect(() => {
+    if (!savedImage) return undefined
+    const onOrient = () => {
+      // Remount the <img> so mobile browsers drop stuck zoom/size after rotate.
+      window.setTimeout(() => setViewerOrientKey((k) => k + 1), 50)
+    }
+    window.addEventListener('orientationchange', onOrient)
+    return () => window.removeEventListener('orientationchange', onOrient)
+  }, [savedImage])
+
+  useEffect(() => {
+    return () => {
+      if (savedImageRef.current?.url) URL.revokeObjectURL(savedImageRef.current.url)
+    }
+  }, [])
 
   const recipeContentKey = useMemo(
     () =>
@@ -201,29 +175,33 @@ export default function CardStudio({
   const ready = Boolean(plan?.pages?.length)
 
   useEffect(() => {
-    if (!isViewMode || refining || !ready) return undefined
-    if (isPhoneLayout || initialPhotoOpen) {
-      setPhotoViewOpen(true)
-    }
-    return undefined
-  }, [isViewMode, isPhoneLayout, initialPhotoOpen, refining, ready])
-
-  useEffect(() => {
     if (ready && pageIndex > pageCount - 1) setPageIndex(Math.max(0, pageCount - 1))
   }, [pageCount, pageIndex, ready])
+
+  const closeSavedImage = useCallback(() => {
+    setSavedImage((prev) => {
+      if (prev?.url) URL.revokeObjectURL(prev.url)
+      return null
+    })
+  }, [])
 
   useEffect(() => {
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key !== 'Escape') return
+      if (savedImage) {
+        closeSavedImage()
+        return
+      }
+      onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => {
       document.body.style.overflow = prev
       window.removeEventListener('keydown', onKey)
     }
-  }, [onClose])
+  }, [onClose, savedImage, closeSavedImage])
 
   const showToast = (message) => {
     setToast(message)
@@ -304,7 +282,23 @@ export default function CardStudio({
             : 0
         }
 
-        const canvas = await captureCardElement(el)
+        const canvas = await html2canvas(el, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          onclone: (_doc, node) => {
+            node.style.visibility = 'visible'
+            node.style.opacity = '1'
+            let parent = node.parentElement
+            while (parent) {
+              parent.style.visibility = 'visible'
+              parent.style.opacity = '1'
+              parent.style.overflow = 'visible'
+              parent = parent.parentElement
+            }
+          },
+        })
         const imgData = canvas.toDataURL('image/png')
 
         if (isCutCard) {
@@ -318,7 +312,7 @@ export default function CardStudio({
         yOffset += cardHeight + gap
       }
 
-      pdf.save(`${slugifyTitle(recipe.title)}_card.pdf`)
+      pdf.save(`${recipe.title.replace(/[^a-z0-9]+/gi, '_')}_card.pdf`)
       showToast('PDF ready.')
     } catch (error) {
       console.error(error)
@@ -331,129 +325,165 @@ export default function CardStudio({
     }
   }, [recipe.title, size, pageCount, ready, refining, plan, printSheetOpen])
 
-  const runImageSave = useCallback(
-    async (scope = 'current') => {
-      if (!ready || refining || printSheetOpen) return
-      setExporting(true)
-      setPrintSheetOpen(true)
-      setImageCapturing(true)
+  const captureCurrentPage = useCallback(async () => {
+    if (!ready || refining || printSheetOpen || captureBusy.current) return null
+    captureBusy.current = true
+    setExporting(true)
+    setPrintSheetOpen(true)
+    setImageCapturing(true)
+    try {
+      const refsReady = await waitForFaceRefs(faceRefs, pageCount)
+      if (!refsReady) return null
+      await waitForPaint()
+
+      const face = faceRefs.current[pageIndex]
+      const el = face?.querySelector('.recipe-index-card')
+      if (!el) return null
+
+      const canvas = await captureCardElement(el)
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
+      if (!blob) return null
+
+      const filename = `${slugifyTitle(recipe.title)}_card.png`
+      const url = URL.createObjectURL(blob)
+      return { url, filename, blob }
+    } catch (error) {
+      console.error(error)
+      return null
+    } finally {
+      captureBusy.current = false
+      setExporting(false)
+      setImageCapturing(false)
+      setPrintSheetOpen(false)
+      faceRefs.current = []
+    }
+  }, [recipe.title, pageCount, pageIndex, ready, refining, printSheetOpen])
+
+  const showCapturedImage = useCallback((captured) => {
+    setSavedImage((prev) => {
+      if (prev?.url) URL.revokeObjectURL(prev.url)
+      return captured
+    })
+  }, [])
+
+  const downloadCaptured = useCallback((captured) => {
+    const a = document.createElement('a')
+    a.href = captured.url
+    a.download = captured.filename
+    a.click()
+    showToast('Downloaded')
+  }, [])
+
+  const shareCaptured = useCallback(
+    async (captured) => {
+      const file = new File([captured.blob], captured.filename, { type: 'image/png' })
+      if (
+        !(
+          window.isSecureContext &&
+          typeof navigator.canShare === 'function' &&
+          navigator.canShare({ files: [file] })
+        )
+      ) {
+        return false
+      }
       try {
-        const refsReady = await waitForFaceRefs(faceRefs, pageCount)
-        if (!refsReady) {
-          showToast('Image save failed — try again.')
-          return
-        }
-        await waitForPaint()
-
-        const indices =
-          scope === 'all'
-            ? Array.from({ length: pageCount }, (_, i) => i)
-            : [pageIndex]
-        const base = slugifyTitle(recipe.title)
-
-        for (let j = 0; j < indices.length; j += 1) {
-          const i = indices[j]
-          const face = faceRefs.current[i]
-          const el = face?.querySelector('.recipe-index-card')
-          if (!el) continue
-
-          const canvas = await captureCardElement(el)
-          const blob = await new Promise((resolve) => {
-            canvas.toBlob(resolve, 'image/png')
-          })
-          if (!blob) {
-            showToast('Image save failed — try again.')
-            return
-          }
-
-          const filename = `${base}_card${pageImageSuffix(i, pageCount)}.png`
-          const result = await savePngBlob(blob, filename, recipe.title)
-          if (result === 'cancelled') {
-            showToast('Save cancelled.')
-            return
-          }
-
-          if (indices.length > 1 && j < indices.length - 1) {
-            await new Promise((resolve) => {
-              window.setTimeout(resolve, 350)
-            })
-          }
-        }
-
-        if (indices.length > 1) {
-          showToast('Images saved.')
-        } else if (isPhoneLayout && canShareImages) {
-          showToast('Saved to Photos.')
-        } else {
-          showToast('Image saved.')
-        }
-      } catch (error) {
-        console.error(error)
-        showToast('Image save failed — try again.')
-      } finally {
-        setExporting(false)
-        setImageCapturing(false)
-        setPrintSheetOpen(false)
-        faceRefs.current = []
+        await navigator.share({ files: [file], title: recipe.title })
+        showToast('Shared.')
+        return true
+      } catch (err) {
+        if (err?.name === 'AbortError') return true
+        return false
       }
     },
-    [recipe.title, pageCount, pageIndex, ready, refining, printSheetOpen, isPhoneLayout, canShareImages]
+    [recipe.title],
   )
+
+  // Capture stays in this tab. Opening a blank tab first backgrounds us and
+  // throttles requestAnimationFrame / html2canvas — that's why "Opening card…" stuck.
+  const openAsImage = useCallback(async () => {
+    const captured = await captureCurrentPage()
+    if (!captured) {
+      showToast("Couldn't open the card - try again.")
+      return
+    }
+    showCapturedImage(captured)
+  }, [captureCurrentPage, showCapturedImage])
+
+  const runImageSave = useCallback(async () => {
+    const captured = await captureCurrentPage()
+    if (!captured) {
+      showToast("Couldn't capture the card - try again.")
+      return
+    }
+
+    const file = new File([captured.blob], captured.filename, { type: 'image/png' })
+    if (
+      window.isSecureContext &&
+      typeof navigator.canShare === 'function' &&
+      navigator.canShare({ files: [file] })
+    ) {
+      try {
+        await navigator.share({ files: [file], title: recipe.title })
+        URL.revokeObjectURL(captured.url)
+        showToast('Shared.')
+        return
+      } catch (err) {
+        if (err?.name === 'AbortError') {
+          URL.revokeObjectURL(captured.url)
+          return
+        }
+        // Share failed - fall through to show image
+      }
+    }
+
+    // Show the image viewer
+    showCapturedImage(captured)
+
+    // Only auto-download on desktop where it works reliably
+    if (canUseDownloadAttr()) {
+      downloadCaptured(captured)
+    } else if (isMobileDevice()) {
+      // On mobile without share support, guide the user
+      showToast('Press and hold to save')
+    }
+  }, [captureCurrentPage, recipe.title, downloadCaptured, showCapturedImage])
+
+  const downloadSavedBlob = useCallback(() => {
+    if (!savedImage) return
+    downloadCaptured(savedImage)
+  }, [savedImage, downloadCaptured])
+
+  const shareSavedBlob = useCallback(async () => {
+    if (!savedImage) return
+    const shared = await shareCaptured(savedImage)
+    if (!shared) downloadCaptured(savedImage)
+  }, [savedImage, shareCaptured, downloadCaptured])
 
   const sheets = ready ? packPageIndexes(pageCount, size) : []
 
   const previewHint = (() => {
-    if (!isMulti) return 'Preview — this is what prints'
+    if (refining) return 'Checking pagination…'
+    if (imageCapturing) return 'Opening…'
+    if (!isMulti) return isPhoneLayout ? '' : 'Click to view image'
     if (pageCount === 2) {
-      return pageIndex === 0 ? 'Front of the card' : 'Back of the card'
+      return pageIndex === 0 ? 'Front' : 'Back'
     }
     return `Page ${pageIndex + 1} of ${pageCount}`
   })()
 
-  useEffect(() => {
-    if (!photoViewOpen) return undefined
-    const onKey = (e) => {
-      if (e.key === 'Escape') setPhotoViewOpen(false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [photoViewOpen])
-
-  const cardPrintProps = {
-    recipe,
-    size,
-    style,
-    pageIndex,
-    plan,
-    largeText,
-  }
-
-  const saveImageLabel =
-    isPhoneLayout && canShareImages ? 'Save to Photos' : 'Save as image'
-  const saveImageShortLabel =
-    isPhoneLayout && canShareImages ? 'Save to Photos' : 'Save image'
-  const showMobileCookDock = isViewMode && isPhoneLayout && !photoViewOpen && ready && !refining
-  const hideStudioChrome = isViewMode && isPhoneLayout && photoViewOpen
-
   const studio = (
     <div
-      className={[
-        'card-studio',
-        isViewMode ? 'card-studio--view' : '',
-        isViewMode && isPhoneLayout ? 'card-studio--mobile-cook' : '',
-      ].filter(Boolean).join(' ')}
+      className="card-studio"
       role="dialog"
       aria-modal="true"
-      aria-label={isViewMode ? 'Recipe card view' : 'Recipe card studio'}
+      aria-label="Recipe card"
     >
-      <div className={`card-studio__chrome no-print${hideStudioChrome ? ' card-studio__chrome--hidden' : ''}`}>
+      <div className="card-studio__chrome no-print">
         <header className="card-studio__top">
           <div>
-            <p className="font-hand text-gingham text-lg leading-none mb-1">
-              {isViewMode ? 'Recipe card' : 'Card studio'}
-            </p>
+            <p className="font-hand text-gingham text-lg leading-none mb-1">Recipe card</p>
             <h2 className="font-hand text-3xl sm:text-4xl text-wicker-900 leading-tight">
-              {isViewMode ? recipe.title : 'Make your recipe card'}
+              {recipe.title}
             </h2>
           </div>
           <button
@@ -467,184 +497,138 @@ export default function CardStudio({
         </header>
 
         <div className="card-studio__layout">
-          {!isViewMode || showPrintOptions ? (
-            <aside className="card-studio__controls">
-              {isViewMode && (
-                <p className="text-sm text-wicker-600 -mt-1 mb-1">
-                  Optional — most people just view the card on their phone.
-                </p>
-              )}
+          <aside className="card-studio__controls">
+            <ControlGroup label="Size">
+              {SIZES.map((opt) => (
+                <OptionButton
+                  key={opt.id}
+                  active={size === opt.id}
+                  title={opt.label}
+                  hint={opt.hint}
+                  onClick={() => setSize(opt.id)}
+                />
+              ))}
+            </ControlGroup>
 
-              <ControlGroup label="Size">
-                {SIZES.map((opt) => (
-                  <OptionButton
-                    key={opt.id}
-                    active={size === opt.id}
-                    title={opt.label}
-                    hint={opt.hint}
-                    onClick={() => setSize(opt.id)}
-                  />
-                ))}
-              </ControlGroup>
+            <ControlGroup label="Paper">
+              {STYLES.map((opt) => (
+                <OptionButton
+                  key={opt.id}
+                  active={style === opt.id}
+                  title={opt.label}
+                  hint={opt.hint}
+                  onClick={() => setStyle(opt.id)}
+                />
+              ))}
+            </ControlGroup>
 
-              <ControlGroup label="Paper">
-                {STYLES.map((opt) => (
-                  <OptionButton
-                    key={opt.id}
-                    active={style === opt.id}
-                    title={opt.label}
-                    hint={opt.hint}
-                    onClick={() => setStyle(opt.id)}
-                  />
-                ))}
-              </ControlGroup>
-
-              <div className="card-studio__actions">
-                <button
-                  type="button"
-                  onClick={runPrint}
-                  disabled={!ready || refining || printSheetOpen}
-                  className="btn-primary w-full flex items-center justify-center gap-2"
-                >
-                  <Printer className="w-4 h-4" />
-                  {refining ? 'Preparing…' : printSheetOpen ? 'Opening print…' : 'Print'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => runImageSave('all')}
-                  disabled={exporting || !ready || refining || printSheetOpen}
-                  className="btn-secondary w-full flex items-center justify-center gap-2"
-                >
-                  <ImageDown className="w-4 h-4" />
-                  {exporting && imageCapturing
-                    ? 'Saving image…'
-                    : refining
-                      ? 'Preparing…'
-                      : saveImageLabel}
-                </button>
-                <button
-                  type="button"
-                  onClick={runPdf}
-                  disabled={exporting || !ready || refining || printSheetOpen}
-                  className="btn-secondary w-full flex items-center justify-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  {exporting && pdfCapturing
-                    ? 'Making PDF…'
-                    : refining
-                      ? 'Preparing…'
-                      : 'Download PDF'}
-                </button>
-                <button type="button" onClick={onClose} className="btn-secondary w-full">
-                  Done
-                </button>
-                {!isViewMode && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSize('4x6')
-                      setStyle('enamel')
-                      setPageIndex(0)
-                    }}
-                    className="w-full flex items-center justify-center gap-2 text-sm text-wicker-600 hover:text-wicker-800 py-2"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    Reset
-                  </button>
-                )}
-              </div>
-            </aside>
-          ) : isPhoneLayout ? null : (
-            <aside className="card-studio__controls card-studio__controls--view">
+            <div className="card-studio__actions">
               <button
                 type="button"
-                className={`card-studio__large-text-toggle ${largeText ? 'is-active' : ''}`}
-                onClick={() => setLargeText((v) => !v)}
-                aria-pressed={largeText}
-              >
-                <Type className="w-4 h-4" aria-hidden />
-                Large text
-                <span className="card-studio__large-text-hint">Easier to read from across the counter</span>
-              </button>
-
-              <button
-                type="button"
-                className="btn-primary w-full flex items-center justify-center gap-2"
+                onClick={runImageSave}
                 disabled={exporting || !ready || refining || printSheetOpen}
-                onClick={() => runImageSave('current')}
+                className="btn-primary w-full flex items-center justify-center gap-2"
               >
-                <ImageDown className="w-4 h-4" aria-hidden />
-                {exporting && imageCapturing ? 'Saving…' : saveImageLabel}
+                <ImageDown className="w-4 h-4" />
+                {exporting && imageCapturing
+                  ? 'Saving…'
+                  : refining
+                    ? 'Preparing…'
+                    : 'Save image'}
               </button>
-
-              {!isPhoneLayout && (
-                <button
-                  type="button"
-                  className="btn-secondary w-full"
-                  onClick={() => setPhotoViewOpen(true)}
-                >
-                  <ImageIcon className="w-4 h-4 inline mr-2" aria-hidden />
-                  Full-screen view
-                </button>
-              )}
-
               <button
                 type="button"
-                className="card-studio__print-link"
-                onClick={() => setShowPrintOptions(true)}
+                onClick={runPrint}
+                disabled={!ready || refining || printSheetOpen}
+                className="btn-secondary w-full flex items-center justify-center gap-2"
               >
-                Print or download PDF
+                <Printer className="w-4 h-4" />
+                {refining ? 'Preparing…' : printSheetOpen && !imageCapturing ? 'Opening print…' : 'Print'}
               </button>
-
+              <button
+                type="button"
+                onClick={runPdf}
+                disabled={exporting || !ready || refining || printSheetOpen}
+                className="btn-secondary w-full flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                {exporting && pdfCapturing
+                  ? 'Making PDF…'
+                  : refining
+                    ? 'Preparing…'
+                    : 'Download PDF'}
+              </button>
               <button type="button" onClick={onClose} className="btn-secondary w-full">
                 Done
               </button>
-            </aside>
-          )}
+              <button
+                type="button"
+                onClick={() => {
+                  setSize('4x6')
+                  setStyle('enamel')
+                  setPageIndex(0)
+                }}
+                className="w-full flex items-center justify-center gap-2 text-sm text-wicker-600 hover:text-wicker-800 py-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Reset
+              </button>
+            </div>
+          </aside>
 
           <div
             className={[
               'card-studio__stage',
               size === 'letter' ? 'card-studio__stage--letter' : '',
+              isPhoneLayout ? 'card-studio__stage--viewing' : '',
             ].join(' ')}
           >
-            {!refining && ready && isPhoneLayout ? (
-              <button
-                type="button"
-                className="card-studio__preview-tap no-print"
-                onClick={() => setPhotoViewOpen(true)}
-                aria-label="Open full-screen card preview"
-              >
-                <div
-                  className={[
-                    'card-studio__preview',
-                    SIZE_PREVIEW_CLASS[size] || SIZE_PREVIEW_CLASS['4x6'],
-                  ].join(' ')}
-                >
-                  <RecipeCardPrint {...cardPrintProps} />
-                </div>
-                <span className="card-studio__preview-tap-label">Tap to preview</span>
-              </button>
-            ) : (
-              <div
-                className={[
-                  'card-studio__preview',
-                  SIZE_PREVIEW_CLASS[size] || SIZE_PREVIEW_CLASS['4x6'],
-                  refining ? 'card-studio__preview--refining' : '',
-                ].join(' ')}
-              >
-                <RecipeCardPrint {...cardPrintProps} />
-                {refining && (
-                  <div className="card-studio__loader" aria-live="polite" aria-busy="true">
-                    <div className="card-studio__loader-ring" aria-hidden />
-                    <div className="card-studio__loader-card" aria-hidden>
-                      Recipe
-                    </div>
-                    <p className="card-studio__loader-text">Fitting your card…</p>
+            <div
+              className={[
+                'card-studio__preview',
+                'card-studio__preview--focusable',
+                SIZE_PREVIEW_CLASS[size] || SIZE_PREVIEW_CLASS['4x6'],
+                refining ? 'card-studio__preview--refining' : '',
+                imageCapturing ? 'card-studio__preview--capturing' : '',
+              ].join(' ')}
+              role="button"
+              tabIndex={ready && !refining && !imageCapturing ? 0 : -1}
+              aria-label="Open recipe card as image"
+              onClick={() => {
+                if (!ready || refining || imageCapturing) return
+                openAsImage()
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  if (!ready || refining || imageCapturing) return
+                  openAsImage()
+                }
+              }}
+            >
+              <RecipeCardPrint
+                recipe={recipe}
+                size={size}
+                style={style}
+                pageIndex={pageIndex}
+                plan={plan}
+              />
+              {ready && !refining && (
+                <span className="card-studio__expand-badge" aria-hidden="true">
+                  <Maximize2 className="w-4 h-4" />
+                  {isPhoneLayout ? (imageCapturing ? 'Opening…' : 'Full screen') : null}
+                </span>
+              )}
+              {refining && (
+                <div className="card-studio__loader" aria-live="polite" aria-busy="true">
+                  <div className="card-studio__loader-ring" aria-hidden />
+                  <div className="card-studio__loader-card" aria-hidden>
+                    Recipe
                   </div>
-                )}
-              </div>
-            )}
+                  <p className="card-studio__loader-text">Fitting your card…</p>
+                </div>
+              )}
+            </div>
 
             {ready && isMulti && (
               <div className="card-studio__sides no-print">
@@ -661,27 +645,9 @@ export default function CardStudio({
               </div>
             )}
 
-            <p className="card-studio__hint">
-              {refining
-                ? 'Checking pagination…'
-                : isViewMode
-                  ? 'Prop your phone on the counter — tap the card for full screen'
-                  : previewHint}
-              <span className="card-studio__hint-size">
-                {SIZES.find((s) => s.id === size)?.printLabel}
-              </span>
-            </p>
-
-            {!refining && ready && isPhoneLayout && (
-              <button
-                type="button"
-                className="card-studio__photo-btn card-studio__photo-btn--mobile no-print"
-                onClick={() => setPhotoViewOpen(true)}
-              >
-                <ImageIcon className="w-4 h-4" aria-hidden />
-                Full-screen preview
-              </button>
-            )}
+            {previewHint ? (
+              <p className="card-studio__hint">{previewHint}</p>
+            ) : null}
           </div>
         </div>
       </div>
@@ -714,9 +680,11 @@ export default function CardStudio({
                   }}
                 >
                   <RecipeCardPrint
-                    {...cardPrintProps}
+                    recipe={recipe}
+                    size={size}
+                    style={style}
                     pageIndex={i}
-                    largeText={imageCapturing ? largeText : false}
+                    plan={plan}
                   />
                 </div>
               ))}
@@ -732,118 +700,58 @@ export default function CardStudio({
         </div>
       )}
 
-      {showMobileCookDock && (
-        <div className="card-studio__mobile-dock no-print">
-          <button
-            type="button"
-            className={`card-studio__mobile-dock-btn ${largeText ? 'is-active' : ''}`}
-            onClick={() => setLargeText((v) => !v)}
-            aria-pressed={largeText}
-          >
-            <Type className="w-5 h-5" aria-hidden />
-            Large text
-          </button>
-          <button
-            type="button"
-            className="card-studio__mobile-dock-btn card-studio__mobile-dock-btn--primary"
-            disabled={exporting || printSheetOpen}
-            onClick={() => runImageSave('current')}
-          >
-            <ImageDown className="w-5 h-5" aria-hidden />
-            {exporting && imageCapturing ? 'Saving…' : saveImageShortLabel}
-          </button>
-          <button
-            type="button"
-            className="card-studio__mobile-dock-btn"
-            onClick={() => setPhotoViewOpen(true)}
-          >
-            <ImageIcon className="w-5 h-5" aria-hidden />
-            Full screen
-          </button>
-        </div>
-      )}
-
-      {photoViewOpen && ready && !refining && (
+      {savedImage && (
         <div
-          className="card-studio__photo-overlay no-print"
+          className="card-studio__saved-overlay no-print"
           role="dialog"
           aria-modal="true"
-          aria-label="Recipe card photo preview"
-          onClick={isPhoneLayout ? undefined : () => setPhotoViewOpen(false)}
+          aria-label="Recipe card image"
         >
-          <header className="card-studio__photo-header">
-            <p className="card-studio__photo-title">{recipe.title}</p>
-            <button
-              type="button"
-              className="card-studio__photo-close"
-              onClick={() => setPhotoViewOpen(false)}
-              aria-label="Close photo preview"
-            >
-              <X className="w-5 h-5" />
-            </button>
+          <header className="card-studio__saved-header">
+            <p className="card-studio__saved-title">{recipe.title}</p>
+            <div className="card-studio__saved-actions">
+              <button
+                type="button"
+                className="card-studio__photo-action"
+                onClick={shareSavedBlob}
+                aria-label="Share image"
+                title="Share"
+              >
+                <Share2 className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                className="card-studio__photo-action"
+                onClick={downloadSavedBlob}
+                aria-label="Download image"
+                title="Download"
+              >
+                <Download className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                className="card-studio__photo-close"
+                onClick={closeSavedImage}
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </header>
 
-          <div
-            className="card-studio__photo-stage"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              className={[
-                'card-studio__photo-preview',
-                SIZE_PHOTO_CLASS[size] || SIZE_PHOTO_CLASS['4x6'],
-              ].join(' ')}
-            >
-              <RecipeCardPrint {...cardPrintProps} />
-            </div>
-          </div>
-
-          {ready && isMulti && (
-            <div className="card-studio__photo-sides" onClick={(e) => e.stopPropagation()}>
-              {plan.pages.map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className={`card-studio__side-chip ${pageIndex === i ? 'is-active' : ''}`}
-                  onClick={() => setPageIndex(i)}
-                >
-                  {getPageChipLabel(i, pageCount)}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <footer
-            className="card-studio__photo-toolbar"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="card-studio__photo-toolbar-row">
-              <button
-                type="button"
-                className={`card-studio__photo-tool ${largeText ? 'is-active' : ''}`}
-                onClick={() => setLargeText((v) => !v)}
-                aria-pressed={largeText}
-              >
-                <Type className="w-5 h-5" aria-hidden />
-                <span>Large text</span>
-              </button>
-              <button
-                type="button"
-                className="card-studio__photo-tool card-studio__photo-tool--primary"
-                disabled={exporting || printSheetOpen}
-                onClick={() => runImageSave('current')}
-              >
-                <ImageDown className="w-5 h-5" aria-hidden />
-                <span>{exporting && imageCapturing ? 'Saving…' : saveImageShortLabel}</span>
-              </button>
-            </div>
-            {!isPhoneLayout && (
-              <p className="card-studio__photo-caption">
-                {isViewMode
-                  ? 'Save the card to your photos, or toggle large text for counter reading.'
-                  : 'Turn your phone sideways for the largest view.'}
+          <div className="card-studio__saved-stage">
+            <img
+              key={viewerOrientKey}
+              src={savedImage.url}
+              alt={`${recipe.title} recipe card`}
+              className="card-studio__saved-img"
+            />
+            {isMobileDevice() && !canUseDownloadAttr() && (
+              <p className="card-studio__saved-hint">
+                Press and hold the image to save to your photos
               </p>
             )}
-          </footer>
+          </div>
         </div>
       )}
     </div>

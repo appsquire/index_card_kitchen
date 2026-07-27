@@ -136,7 +136,6 @@ export default function RecipeCardPrint({
   style = 'lined',
   pageIndex = 0,
   className = '',
-  largeText = false,
   plan: planProp,
 }) {
   const dims = SIZE_STYLES[size] || SIZE_STYLES['4x6']
@@ -183,7 +182,6 @@ export default function RecipeCardPrint({
         LAYOUT_CLASS[bodyLayout] || LAYOUT_CLASS.split,
         isContinuation ? 'recipe-index-card--back' : 'recipe-index-card--front',
         isContinuation ? 'recipe-index-card--continuation' : '',
-        largeText ? 'recipe-index-card--large-text' : '',
         className,
       ].join(' ')}
       style={{ width: dims.width, height: dims.height }}

@@ -150,6 +150,18 @@ router.post('/', async (req, res, next) => {
     const result = await query(
       `INSERT INTO recipes (id, user_id, title, description, source_url, image_url, prep_time, cook_time, servings, ingredients, instructions)
        VALUES (COALESCE($1, uuid_generate_v4()), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       ON CONFLICT (id) DO UPDATE SET
+         title = EXCLUDED.title,
+         description = EXCLUDED.description,
+         source_url = EXCLUDED.source_url,
+         image_url = EXCLUDED.image_url,
+         prep_time = EXCLUDED.prep_time,
+         cook_time = EXCLUDED.cook_time,
+         servings = EXCLUDED.servings,
+         ingredients = EXCLUDED.ingredients,
+         instructions = EXCLUDED.instructions,
+         updated_at = NOW()
+       WHERE recipes.user_id = $2
        RETURNING *`,
       [
         id || null,
@@ -166,7 +178,23 @@ router.post('/', async (req, res, next) => {
       ]
     )
 
-    const recipe = result.rows[0]
+    let recipe = result.rows[0]
+
+    // Conflict with another user's id (WHERE blocked the update) — fetch ours or 409.
+    if (!recipe && id) {
+      const existing = await query(
+        'SELECT * FROM recipes WHERE id = $1 AND user_id = $2',
+        [id, req.user.id]
+      )
+      recipe = existing.rows[0]
+      if (!recipe) {
+        return res.status(409).json({ message: 'Recipe id already exists' })
+      }
+    }
+
+    if (!recipe) {
+      return res.status(500).json({ message: 'Failed to create recipe' })
+    }
 
     // Add category associations
     if (categoryIds && categoryIds.length > 0) {
