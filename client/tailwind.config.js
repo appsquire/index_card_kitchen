@@ -39,6 +39,12 @@ export default {
           dark: '#D4B44A',
         },
         enamel: '#FFFEFA',
+        appsquire: {
+          orange: '#F9A825',
+          'orange-dark': '#E8920F',
+          'orange-light': '#FFC947',
+          ink: '#2D3436',
+        },
       },
       fontFamily: {
         sans: ['Nunito', 'ui-rounded', 'system-ui', 'sans-serif'],

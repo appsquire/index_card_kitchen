@@ -146,13 +146,19 @@ export default function Layout() {
           className="site-footer__appsquire group"
           aria-label="Built by AppSquire — visit appsquire.com"
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-5">
             <span className="site-footer__stamp" aria-hidden>
               Launch Lab
             </span>
+            <span className="site-footer__logo-mark" aria-hidden>
+              as
+            </span>
             <span className="site-footer__appsquire-text">
               <span className="site-footer__appsquire-lead">Filed &amp; built by</span>
-              <span className="site-footer__appsquire-name">AppSquire</span>
+              <span className="site-footer__appsquire-brand">
+                <span className="site-footer__appsquire-name">appsquire</span>
+                <span className="site-footer__appsquire-consulting">consulting</span>
+              </span>
               <span className="site-footer__appsquire-meta">
                 Edmonton, AB · Custom software
               </span>
