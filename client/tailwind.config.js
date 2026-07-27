@@ -44,10 +44,10 @@ export default {
           'orange-dark': '#E8920F',
           'orange-light': '#FFC947',
           ink: '#2D3436',
-          /* Muted butter — footer band on Index Card Kitchen */
-          butter: '#F0E2B8',
-          'butter-deep': '#E8D49A',
-          'butter-muted': '#D4B44A',
+          /* Softer site footer band — same hue, gentler saturation */
+          band: '#E8B24A',
+          'band-light': '#F0C66A',
+          'band-deep': '#D49A38',
         },
       },
       fontFamily: {
