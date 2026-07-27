@@ -1,0 +1,100 @@
+# Index Card Kitchen CI Pipeline
+#
+# This replaces GitLab Auto DevOps with a custom pipeline that works
+# on the ARM Mac runner (Mac Studio).
+
+stages:
+  - install
+  - lint
+  - build
+  - docker
+
+# Use shell executor (runs on Mac Studio runner #20)
+default:
+  tags:
+    - shell
+
+# Cache node_modules between jobs
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - client/node_modules/
+    - server/node_modules/
+
+# ─────────────────────────────────────────────────────────────────────
+# INSTALL
+# ─────────────────────────────────────────────────────────────────────
+
+install:
+  stage: install
+  script:
+    - cd client && npm ci
+    - cd ../server && npm ci
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# ─────────────────────────────────────────────────────────────────────
+# LINT
+# ─────────────────────────────────────────────────────────────────────
+
+lint:client:
+  stage: lint
+  script:
+    - cd client && npm run lint
+  allow_failure: true  # Don't block on lint warnings initially
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# ─────────────────────────────────────────────────────────────────────
+# BUILD
+# ─────────────────────────────────────────────────────────────────────
+
+build:client:
+  stage: build
+  script:
+    - cd client && npm run build
+  artifacts:
+    paths:
+      - client/dist/
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# ─────────────────────────────────────────────────────────────────────
+# DOCKER
+# ─────────────────────────────────────────────────────────────────────
+
+docker:build:
+  stage: docker
+  script:
+    - docker build -t index-card-kitchen:${CI_COMMIT_SHORT_SHA} .
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  allow_failure: true  # Docker may not be available/updated on all runners
+
+# ─────────────────────────────────────────────────────────────────────
+# DISABLED AUTO DEVOPS JOBS
+# ─────────────────────────────────────────────────────────────────────
+# These Auto DevOps jobs don't work on ARM runners, so we disable them.
+# Remove these overrides if you switch to an x86 runner.
+
+code_quality:
+  rules:
+    - when: never
+
+container_scanning:
+  rules:
+    - when: never
+
+# Keep secret detection - it works on ARM
+# secret_detection:
+#   rules:
+#     - when: never
+
+# Keep SAST if it works
+# semgrep-sast:
+#   rules:
+#     - when: never
