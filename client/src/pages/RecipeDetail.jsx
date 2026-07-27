@@ -6,7 +6,6 @@ import {
   ExternalLink,
   Edit,
   Trash2,
-  Printer,
   ArrowLeft,
 } from 'lucide-react'
 import { useRecipes } from '../context/RecipeContext'
@@ -194,7 +193,7 @@ export default function RecipeDetail() {
             <button
               onClick={() => setShowCardStudio(true)}
               className="group w-full cursor-pointer"
-              aria-label="Make a recipe card"
+              aria-label="Open card studio — print or download PDF"
             >
               <div
                 className="relative overflow-hidden rounded-lg shadow-sm group-hover:shadow-md transition-all"
@@ -214,9 +213,11 @@ export default function RecipeDetail() {
                   </div>
                 </div>
               </div>
-              <p className="mt-2 text-sm text-wicker-600 group-hover:text-gingham transition-colors text-center flex items-center justify-center gap-1">
-                <Printer className="w-4 h-4" />
-                Click to customize & print
+              <p className="mt-2 text-center">
+                <span className="text-sm font-semibold text-wicker-700 group-hover:text-gingham transition-colors">
+                  Make recipe card
+                </span>
+                <span className="block text-xs text-wicker-500 mt-0.5">Print or PDF</span>
               </p>
             </button>
 

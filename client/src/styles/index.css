@@ -168,8 +168,51 @@
   flex-shrink: 0;
 }
 
+.recipe-index-card--continuation .recipe-index-card__body {
+  flex: 1;
+  min-height: 0;
+}
+
+.recipe-index-card--letter .recipe-index-card__frame {
+  padding: 0.55in 0.6in 0.48in;
+}
+
 .recipe-index-card--letter .recipe-index-card__header {
-  margin-bottom: 0.26in;
+  margin-bottom: 0.32in;
+}
+
+.recipe-index-card--letter .recipe-index-card__body--stacked {
+  gap: 0.32in;
+}
+
+.recipe-index-card--letter .recipe-index-card__block h2 {
+  font-size: 30px;
+  margin-bottom: 12px;
+}
+
+.recipe-index-card--letter .recipe-index-card__meta {
+  font-size: 11px;
+}
+
+.recipe-index-card--letter .recipe-index-card__block--ingredients li,
+.recipe-index-card--letter .recipe-index-card__block--directions li {
+  font-size: 15px;
+  line-height: 1.42;
+  margin-bottom: 9px;
+}
+
+.recipe-index-card--letter .recipe-index-card__block--ingredients li {
+  grid-template-columns: 1.35in 1fr;
+}
+
+.recipe-index-card--letter .recipe-index-card__amt,
+.recipe-index-card--letter .recipe-index-card__num {
+  font-size: 13px;
+}
+
+.recipe-index-card--letter .recipe-index-card__footer {
+  font-size: 9px;
+  padding-top: 0.14in;
 }
 
 .recipe-index-card__wordmark {
@@ -248,33 +291,22 @@
   gap: 0.16in;
 }
 
-/* Newspaper columns: fill column 1 top→bottom, then column 2.
-   (balance was splitting ingredients across columns early on tall
-   Full page cards and leaving empty space at the bottom.) */
+/* True two panes: Ingredients | Directions */
 .recipe-index-card__body--split {
-  column-count: 2;
-  column-gap: 0.22in;
-  column-fill: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.18in 0.22in;
+  align-items: start;
   height: 100%;
 }
 
 .recipe-index-card--letter .recipe-index-card__body--split {
-  column-gap: 0.28in;
+  gap: 0.24in 0.28in;
 }
 
-.recipe-index-card__body--split > .recipe-index-card__block + .recipe-index-card__block {
-  margin-top: 0.14in;
-}
-
-.recipe-index-card__body--split .recipe-index-card__block h2 {
-  break-after: avoid;
-  -webkit-column-break-after: avoid;
-}
-
-.recipe-index-card__body--split .recipe-index-card__block li {
-  break-inside: avoid;
-  -webkit-column-break-inside: avoid;
-  page-break-inside: avoid;
+.recipe-index-card__pane {
+  min-width: 0;
+  min-height: 0;
 }
 
 .recipe-index-card__block h2 {
@@ -345,23 +377,6 @@
   padding-top: 1px;
 }
 
-.recipe-index-card--letter .recipe-index-card__block--ingredients li,
-.recipe-index-card--letter .recipe-index-card__block--directions li {
-  font-size: 13px;
-  margin-bottom: 8px;
-}
-
-.recipe-index-card--letter .recipe-index-card__block--ingredients li {
-  grid-template-columns: 1.15in 1fr;
-}
-
-.recipe-index-card__cont {
-  font-family: 'Patrick Hand', cursive;
-  font-size: 12px;
-  color: #c23b3b;
-  margin-top: 4px;
-}
-
 .recipe-index-card__footer {
   flex-shrink: 0;
   margin-top: auto;
@@ -381,18 +396,6 @@
   letter-spacing: 0.08em;
   color: #c23b3b;
   white-space: nowrap;
-}
-
-.recipe-index-card__cont--banner {
-  column-span: all;
-  margin-top: 6px;
-  padding-top: 6px;
-  font-size: 13px;
-  text-align: right;
-}
-
-.recipe-index-card__body--stacked .recipe-index-card__cont--banner {
-  margin-top: auto;
 }
 
 /* —— Card studio (portaled fullscreen) —— */
@@ -529,6 +532,81 @@
   transition: opacity 0.25s ease, filter 0.25s ease;
 }
 
+.card-studio__preview--refining > .recipe-index-card {
+  filter: blur(1px) brightness(0.92);
+  pointer-events: none;
+}
+
+.card-studio__loader {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: rgba(28, 41, 36, 0.42);
+  backdrop-filter: blur(2px);
+}
+
+.card-studio__loader-ring {
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 3px solid rgba(255, 248, 235, 0.28);
+  border-top-color: #c23b3b;
+  border-radius: 50%;
+  animation: card-studio-spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+.card-studio__loader-card {
+  width: 3.25rem;
+  height: 2.2rem;
+  background: #fffefa;
+  border-radius: 2px;
+  box-shadow:
+    0 0 0 1px rgba(40, 30, 20, 0.12),
+    0 8px 22px rgba(0, 0, 0, 0.25);
+  animation: card-studio-card-pulse 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  padding: 0.28rem 0.32rem;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.95rem;
+  line-height: 1;
+  color: #c23b3b;
+}
+
+.card-studio__loader-text {
+  margin: 0.15rem 0 0;
+  font-family: Nunito, ui-rounded, system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fffefa;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+
+@keyframes card-studio-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes card-studio-card-pulse {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-4px) scale(1.03);
+    opacity: 0.92;
+  }
+}
+
 .card-studio__preview > .recipe-index-card {
   transform-origin: top left;
 }
@@ -651,15 +729,24 @@
   color: #fff;
 }
 
-/* Measure/print targets: in-viewport but invisible so layout/fonts work reliably */
+/* Off-screen measure/print targets — never peek through the studio UI */
 .card-studio__print-sheet {
   position: fixed;
-  left: 0;
+  left: -12000px;
   top: 0;
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
   z-index: -1;
   width: max-content;
+  overflow: hidden;
+}
+
+/* html2canvas cannot snapshot visibility:hidden nodes — flip visible while off-screen */
+.card-studio__print-sheet--capture {
+  opacity: 1 !important;
+  visibility: visible !important;
+  overflow: visible !important;
 }
 
 .card-studio__print-pack {
@@ -998,6 +1085,8 @@
     pointer-events: auto !important;
     z-index: auto !important;
     width: auto !important;
+    /* Screen styles hide the sheet with opacity:0 — must restore for print */
+    opacity: 1 !important;
     visibility: visible !important;
   }
 
@@ -1064,11 +1153,6 @@
   .recipe-index-card {
     break-inside: avoid;
     page-break-inside: avoid;
-  }
-
-  body.printing-card .card-studio__print-sheet--letter .recipe-index-card {
-    break-inside: auto;
-    page-break-inside: auto;
   }
 }
 

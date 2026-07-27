@@ -1,12 +1,12 @@
 import { launchBrowser } from './browser.js'
-
-const SIZES = {
-  '4x6': { width: '6in', height: '4in', pageWidth: '6in', pageHeight: '4in' },
-  '5x7': { width: '7in', height: '5in', pageWidth: '7in', pageHeight: '5in' },
-  letter: { width: '8.5in', height: '11in', pageWidth: '8.5in', pageHeight: '11in' },
-}
-
-const MAX_CARD_PAGES = 8
+import {
+  planRecipeCard,
+  packPageIndexes,
+  getPageFooterTag,
+  SIZE_STYLES,
+  pageBodyLayout,
+  sectionHeadingOnPage,
+} from '../../../shared/cardPlan.js'
 
 const FRACTIONS = [
   [1 / 8, '⅛'],
@@ -56,129 +56,29 @@ function formatQuantity(value) {
   return `${sign}${rounded}`
 }
 
-function pageLimits(size) {
-  if (size === 'letter') {
-    return { stackedIng: 18, stackedStep: 10, splitIng: 28, splitStep: 14 }
-  }
-  if (size === '5x7') {
-    return { stackedIng: 8, stackedStep: 5, splitIng: 12, splitStep: 6 }
-  }
-  return { stackedIng: 5, stackedStep: 3, splitIng: 8, splitStep: 3 }
+function formatMinutes(n) {
+  if (!n) return null
+  return n >= 60 ? `${Math.floor(n / 60)}H${n % 60 ? ` ${n % 60}M` : ''}` : `${n}M`
 }
 
-function getPageFooterTag(pageIndex, totalPages) {
-  if (totalPages <= 1) return null
-  if (totalPages === 2) return `Side ${pageIndex + 1} of 2`
-  return `Page ${pageIndex + 1} of ${totalPages}`
-}
-
-function annotatePageNotes(pages) {
-  return pages.map((page) => ({ ...page, note: null }))
-}
-
-function trimEmptyPages(pages) {
-  const mapped = pages.map((p) => ({
-    ingredients: [...(p.ingredients || [])],
-    instructions: [...(p.instructions || [])],
-    note: null,
-  }))
-  const nonempty = mapped.filter(
-    (p) => p.ingredients.length > 0 || p.instructions.length > 0
-  )
-  return nonempty.length > 0
-    ? nonempty
-    : [{ ingredients: [], instructions: [], note: null }]
-}
-
-function facesPerLetterSheet(size) {
-  if (size === '4x6' || size === '5x7') return 2
-  return 1
-}
-
-function packPageIndexes(pageCount, size) {
-  const per = facesPerLetterSheet(size)
-  const sheets = []
-  for (let i = 0; i < pageCount; i += per) {
-    const faceIndexes = []
-    for (let j = i; j < Math.min(i + per, pageCount); j++) faceIndexes.push(j)
-    sheets.push(faceIndexes)
-  }
-  return sheets
-}
-
-/**
- * Pack ingredients then directions onto pages (stream order).
- * Directions only start after all ingredients are placed.
- */
-function packStreamPages(ingredients, instructions, { ingCap, stepCap }) {
-  const pages = []
-  let ingRemaining = [...ingredients]
-  let stepRemaining = [...instructions]
-
-  if (ingRemaining.length === 0 && stepRemaining.length === 0) {
-    return [{ ingredients: [], instructions: [] }]
-  }
-
-  while (
-    (ingRemaining.length > 0 || stepRemaining.length > 0) &&
-    pages.length < MAX_CARD_PAGES
-  ) {
-    const pageIng = ingRemaining.splice(0, ingCap)
-    let pageSteps = []
-    if (ingRemaining.length === 0) {
-      pageSteps = stepRemaining.splice(0, stepCap)
-    }
-    if (pageIng.length === 0 && pageSteps.length === 0) break
-    pages.push({ ingredients: pageIng, instructions: pageSteps })
-  }
-
-  if (ingRemaining.length || stepRemaining.length) {
-    if (pages.length === 0) {
-      pages.push({ ingredients: [], instructions: [] })
-    }
-    const last = pages[pages.length - 1]
-    last.ingredients.push(...ingRemaining)
-    last.instructions.push(...stepRemaining)
-  }
-
-  return pages
-}
-
-/**
- * Heuristic multi-page plan (server has no DOM measure).
- * Uses generous caps so pages stay denser; footer tag alone marks multi-page.
- */
-function planRecipeCard(recipe, { size = '4x6', layout = 'split' } = {}) {
-  const ingredients = (recipe.ingredients || []).filter((i) => i?.name?.trim())
-  const instructions = (recipe.instructions || []).filter((i) => i?.step?.trim())
-  const strategy = layout === 'stacked' ? 'stacked' : 'split'
-  const limits = pageLimits(size)
-
-  const pages = packStreamPages(ingredients, instructions, {
-    ingCap: strategy === 'split' ? limits.splitIng : limits.stackedIng,
-    stepCap: strategy === 'split' ? limits.splitStep : limits.stackedStep,
-  })
-
-  return {
-    pages: annotatePageNotes(
-      trimEmptyPages(pages.length ? pages : [{ ingredients: [], instructions: [] }])
-    ),
-    strategy,
-  }
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }
 
 export async function generateRecipePdf(recipe, options = {}) {
-  const size = SIZES[options.size] ? options.size : '4x6'
+  const size = SIZE_STYLES[options.size] ? options.size : '4x6'
   const style = ['lined', 'butter', 'enamel'].includes(options.style) ? options.style : 'enamel'
-  const layout = options.layout === 'stacked' ? 'stacked' : 'split'
-  const dims = SIZES[size]
-  const plan = planRecipeCard(recipe, { size, layout })
+  const dims = SIZE_STYLES[size]
+  const plan = options.plan || planRecipeCard(recipe, { size })
   const packOntoLetter = size === '4x6' || size === '5x7'
 
   const html = generateRecipeHtml(recipe, {
     size,
     style,
-    layout,
     dims,
     plan,
     packOntoLetter,
@@ -204,8 +104,8 @@ export async function generateRecipePdf(recipe, options = {}) {
             preferCSSPageSize: false,
           }
         : {
-            width: dims.pageWidth,
-            height: dims.pageHeight,
+            width: dims.width,
+            height: dims.height,
             margin: { top: '0', right: '0', bottom: '0', left: '0' },
             printBackground: true,
             preferCSSPageSize: false,
@@ -218,15 +118,24 @@ export async function generateRecipePdf(recipe, options = {}) {
   }
 }
 
-function formatMinutes(n) {
-  if (!n) return null
-  return n >= 60 ? `${Math.floor(n / 60)}H${n % 60 ? ` ${n % 60}M` : ''}` : `${n}M`
+function renderSection(kind, heading, listHtml, enamel) {
+  if (!listHtml) return ''
+  const color = enamel ? '#c23b3b' : '#111'
+  const listTag = kind === 'ings' ? 'ul' : 'ol'
+  const listClass = kind === 'ings' ? 'ings' : 'dirs'
+  const headingHtml = heading
+    ? `<h2 style="color:${color}">${escapeHtml(heading)}</h2>`
+    : ''
+  return `<section>
+    ${headingHtml}
+    <${listTag} class="${listClass}">${listHtml}</${listTag}>
+  </section>`
 }
 
-function renderCardPage(recipe, { size, style, layout, dims, plan, pageIndex }) {
+function renderCardPage(recipe, { size, style, dims, plan, pageIndex }) {
   const totalPages = plan.pages?.length || 1
   const safeIndex = Math.min(Math.max(0, pageIndex), totalPages - 1)
-  const page = plan.pages[safeIndex] || { ingredients: [], instructions: [] }
+  const page = plan.pages[safeIndex] || { mode: 'stacked', ingredients: [], instructions: [] }
   const ingredients = page.ingredients || []
   const instructions = page.instructions || []
   const isContinuation = safeIndex > 0
@@ -234,7 +143,7 @@ function renderCardPage(recipe, { size, style, layout, dims, plan, pageIndex }) 
     .slice(0, safeIndex)
     .reduce((n, p) => n + (p.instructions?.length || 0), 0)
 
-  const bodyLayout = plan.strategy === 'stacked' || layout === 'stacked' ? 'stacked' : 'split'
+  const bodyLayout = pageBodyLayout(page, plan)
 
   let source = ''
   try {
@@ -253,12 +162,19 @@ function renderCardPage(recipe, { size, style, layout, dims, plan, pageIndex }) 
     .map((bit, i) => `${i > 0 ? '<span class="sep">|</span>' : ''}${escapeHtml(bit)}`)
     .join('')
 
+  const amtCol = size === 'letter' ? '1.15in' : size === '5x7' ? '1.05in' : '0.95in'
+
   const ingredientsHtml = ingredients
     .map((ing) => {
-      const amount = [formatQuantity(ing.amount), ing.unit].filter(Boolean).join(' ')
-      return `<li class="${amount ? '' : 'full'}">${
+      const qty = formatQuantity(ing.amount)
+      const amount = qty ? [qty, ing.unit].filter(Boolean).join(' ') : ''
+      const name =
+        !qty && ing.unit
+          ? [ing.unit, ing.name].filter(Boolean).join(' ')
+          : ing.name || ''
+      return `<li class="${amount ? '' : 'full'}" style="--amt-col:${amtCol}">${
         amount ? `<span class="amt">${escapeHtml(amount)}</span>` : ''
-      }<span class="iname">${escapeHtml(ing.name)}</span></li>`
+      }<span class="iname">${escapeHtml(name)}</span></li>`
     })
     .join('')
 
@@ -279,44 +195,51 @@ function renderCardPage(recipe, { size, style, layout, dims, plan, pageIndex }) 
   const wordSize = isLetter ? '64px' : size === '5x7' ? '48px' : '42px'
   const titleSize = isLetter ? '20px' : size === '5x7' ? '15px' : '13px'
   const bodySize = isLetter ? '13px' : '10.5px'
-  const amtCol = isLetter ? '1.15in' : size === '5x7' ? '1.05in' : '0.95in'
   const headerMb = isLetter ? '0.26in' : '0.18in'
+  const enamel = style === 'enamel'
 
-  const ingHeading =
-    isContinuation && instructions.length > 0 && ingredients.length > 0
-      ? 'More ingredients'
-      : 'Ingredients'
+  const showCardHeader = safeIndex === 0
+  const showIngHeading =
+    ingredients.length > 0 && sectionHeadingOnPage(plan, safeIndex, 'ingredients')
+  const showDirHeading =
+    instructions.length > 0 && sectionHeadingOnPage(plan, safeIndex, 'directions')
+
+  const ingSection = renderSection(
+    'ings',
+    showIngHeading ? 'Ingredients' : null,
+    ingredientsHtml,
+    enamel
+  )
+  const dirSection = renderSection(
+    'dirs',
+    showDirHeading ? 'Directions' : null,
+    instructionsHtml,
+    enamel
+  )
+
+  const bodyInner =
+    bodyLayout === 'split'
+      ? `<div class="pane">${ingSection}</div><div class="pane">${dirSection}</div>`
+      : `${ingSection}${dirSection}`
 
   const metaBlock = metaHtml ? `<div class="meta">${metaHtml}</div>` : ''
-
-  return `
-  <div class="card ${style}" style="width:${dims.width};height:${dims.height}">
-    <div class="header" style="margin-bottom:${headerMb}">
-      <div class="wordmark" style="font-size:${wordSize};color:${style === 'enamel' ? '#c23b3b' : '#111'}">
+  const headerHtml = showCardHeader
+    ? `<div class="header" style="margin-bottom:${headerMb}">
+      <div class="wordmark" style="font-size:${wordSize};color:${enamel ? '#c23b3b' : '#111'}">
         Recipe
       </div>
       <div class="heading">
         <h1 style="font-size:${titleSize}">${escapeHtml(title)}</h1>
         ${metaBlock}
       </div>
-    </div>
+    </div>`
+    : ''
+
+  return `
+  <div class="card ${style}${isContinuation ? ' continuation' : ''}" style="width:${dims.width};height:${dims.height}">
+    ${headerHtml}
     <div class="body ${bodyLayout}" style="font-size:${bodySize}">
-      ${
-        ingredients.length
-          ? `<section>
-              <h2 style="color:${style === 'enamel' ? '#c23b3b' : '#111'}">${escapeHtml(ingHeading)}</h2>
-              <ul class="ings" style="--amt-col:${amtCol}">${ingredientsHtml}</ul>
-            </section>`
-          : ''
-      }
-      ${
-        instructions.length
-          ? `<section>
-              <h2 style="color:${style === 'enamel' ? '#c23b3b' : '#111'}">Directions</h2>
-              <ol class="dirs">${instructionsHtml}</ol>
-            </section>`
-          : ''
-      }
+      ${bodyInner}
     </div>
     <div class="footer">
       <span>${escapeHtml(footerLeft)}</span>
@@ -325,7 +248,7 @@ function renderCardPage(recipe, { size, style, layout, dims, plan, pageIndex }) 
   </div>`
 }
 
-function generateRecipeHtml(recipe, { size, style, layout, dims, plan, packOntoLetter = false }) {
+function generateRecipeHtml(recipe, { size, style, dims, plan, packOntoLetter = false }) {
   const totalPages = plan.pages?.length || 1
   const sheets = packOntoLetter
     ? packPageIndexes(totalPages, size)
@@ -335,7 +258,7 @@ function generateRecipeHtml(recipe, { size, style, layout, dims, plan, packOntoL
     .map((faceIndexes, sheetIdx) => {
       const faces = faceIndexes
         .map((i) =>
-          renderCardPage(recipe, { size, style, layout, dims, plan, pageIndex: i })
+          renderCardPage(recipe, { size, style, dims, plan, pageIndex: i })
         )
         .join('\n')
       const breakClass = sheetIdx > 0 ? ' sheet--break' : ''
@@ -373,7 +296,6 @@ function generateRecipeHtml(recipe, { size, style, layout, dims, plan, packOntoL
       flex-shrink: 0;
       border: none;
     }
-    /* Dashed cut guides only when packing index cards onto letter sheets */
     .sheet--cut .card {
       border: 2px dashed #999;
     }
@@ -409,22 +331,23 @@ function generateRecipeHtml(recipe, { size, style, layout, dims, plan, packOntoL
     }
     .sep { margin: 0 0.28em; color: #999; font-weight: 500; }
     .body.split {
-      column-count: 2;
-      column-gap: 0.22in;
-      column-fill: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.18in 0.22in;
+      align-items: start;
       flex: 1;
       min-height: 0;
       overflow: hidden;
-      height: 100%;
     }
-    .body.split > section + section { margin-top: 0.14in; }
-    .body.split h2 { break-after: avoid; -webkit-column-break-after: avoid; }
-    .body.split li {
-      break-inside: avoid;
-      -webkit-column-break-inside: avoid;
-      page-break-inside: avoid;
+    .body.split .pane { min-width: 0; min-height: 0; }
+    .body.stacked {
+      display: flex;
+      flex-direction: column;
+      gap: 0.16in;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
     }
-    .body.stacked { display: flex; flex-direction: column; gap: 0.16in; flex: 1; min-height: 0; overflow: hidden; }
     h2 {
       font-family: 'Patrick Hand', 'Segoe Print', 'Comic Sans MS', cursive;
       font-size: 22px;
@@ -450,15 +373,6 @@ function generateRecipeHtml(recipe, { size, style, layout, dims, plan, packOntoL
       line-height: 1.3;
     }
     .num { font-weight: 800; font-size: 10px; }
-    .cont {
-      column-span: all;
-      margin-top: 6px;
-      text-align: right;
-      font-family: 'Patrick Hand', cursive;
-      font-size: 13px;
-      color: #c23b3b;
-    }
-    .body.stacked .cont { margin-top: auto; }
     .footer {
       margin-top: auto;
       padding-top: 0.1in;
@@ -478,12 +392,4 @@ function generateRecipeHtml(recipe, { size, style, layout, dims, plan, packOntoL
   ${sheetHtml}
 </body>
 </html>`
-}
-
-function escapeHtml(text) {
-  return String(text)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
 }

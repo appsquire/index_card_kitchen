@@ -5,14 +5,12 @@ import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import RecipeCardPrint, {
   planRecipeCard,
-  spillOneOverflowItem,
-  detectCardOverflow,
   packPageIndexes,
   facesPerLetterSheet,
   getPageChipLabel,
   SIZE_STYLES,
-  MAX_CARD_PAGES,
 } from './RecipeCardPrint'
+import { measureAndPackPlan } from '../utils/measureCardPlan'
 
 const SIZES = [
   { id: '4x6', label: '4×6 recipe card', hint: 'Landscape — fits a classic recipe box', printLabel: 'Prints at 6 × 4 inches (landscape)' },
@@ -26,30 +24,43 @@ const SIZE_PREVIEW_CLASS = {
   letter: 'card-studio__preview--letter',
 }
 
+function waitForPaint() {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve))
+  })
+}
+
+async function waitForFaceRefs(refs, count) {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    let ready = true
+    for (let i = 0; i < count; i += 1) {
+      if (!refs.current[i]?.querySelector('.recipe-index-card')) {
+        ready = false
+        break
+      }
+    }
+    if (ready) return true
+    await waitForPaint()
+  }
+  return false
+}
+
 const STYLES = [
   { id: 'lined', label: 'Ruled', hint: 'White card with writing lines' },
   { id: 'butter', label: 'Manila', hint: 'Warm scrap-paper yellow' },
   { id: 'enamel', label: 'Kitchen white', hint: 'Clean white, cherry script' },
 ]
 
-function plansEqual(a, b) {
-  return JSON.stringify(a) === JSON.stringify(b)
-}
-
 export default function CardStudio({ recipe, onClose }) {
   const [size, setSize] = useState('4x6')
   const [style, setStyle] = useState('enamel')
-  const [layout, setLayout] = useState('split')
   const [pageIndex, setPageIndex] = useState(0)
   const [exporting, setExporting] = useState(false)
+  const [printSheetOpen, setPrintSheetOpen] = useState(false)
+  const [pdfCapturing, setPdfCapturing] = useState(false)
   const [toast, setToast] = useState(null)
-  const [plan, setPlan] = useState(() => planRecipeCard(recipe, { size: '4x6', layout: 'split' }))
   const faceRefs = useRef([])
-  const previewRef = useRef(null)
-  const refineCountRef = useRef(0)
-  const MAX_REFINE_STEPS = 64
 
-  // Stable key so parent re-renders with a new recipe object don't reset the plan
   const recipeContentKey = useMemo(
     () =>
       JSON.stringify({
@@ -61,97 +72,40 @@ export default function CardStudio({ recipe, onClose }) {
     [recipe]
   )
 
-  const basePlan = useMemo(
-    () => planRecipeCard(recipe, { size, layout }),
-    // recipeContentKey captures recipe fields; size/layout drive pagination
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [recipeContentKey, size, layout]
-  )
+  const [plan, setPlan] = useState(() => planRecipeCard(recipe, { size: '4x6' }))
+  const [refining, setRefining] = useState(true)
 
-  // Reset to seeded plan when recipe/size/layout/style change — not on every parent render
-  useEffect(() => {
-    setPlan(basePlan)
-    setPageIndex(0)
-    refineCountRef.current = 0
-  }, [basePlan, style])
-
-  const pageCount = plan.pages?.length || 1
-  const isMulti = pageCount > 1
-
-  useEffect(() => {
-    if (pageIndex > pageCount - 1) setPageIndex(Math.max(0, pageCount - 1))
-  }, [pageCount, pageIndex])
-
-  // Measure-and-spill: refine seeded plan if a face still clips.
   useEffect(() => {
     let cancelled = false
-    let raf = 0
-    const timers = []
+    const draft = planRecipeCard(recipe, { size })
+    setPlan(draft)
+    setPageIndex(0)
+    setRefining(true)
 
-    const refine = () => {
-      if (cancelled) return
-      if (refineCountRef.current >= MAX_REFINE_STEPS) return
-
-      const pages = plan.pages || []
-      let needsRetry = false
-
-      for (let i = 0; i < pages.length && i < MAX_CARD_PAGES; i++) {
-        // Prefer on-screen preview for the visible page; print faces for others
-        const cardEl =
-          i === pageIndex && previewRef.current
-            ? previewRef.current
-            : faceRefs.current[i]
-        if (!cardEl) {
-          needsRetry = true
-          continue
-        }
-
-        const overflow = detectCardOverflow(cardEl)
-        if (!overflow) continue
-        if (overflow.notReady) {
-          needsRetry = true
-          continue
-        }
-
-        const next = spillOneOverflowItem(plan, i, {
-          preferColumn: overflow.preferColumn,
-        })
-        if (!plansEqual(next, plan)) {
-          refineCountRef.current += 1
-          setPlan(next)
-          return
-        }
-      }
-
-      if (needsRetry && refineCountRef.current < MAX_REFINE_STEPS) {
-        timers.push(
-          window.setTimeout(() => {
-            raf = requestAnimationFrame(refine)
-          }, 50)
-        )
-      }
-    }
-
-    raf = requestAnimationFrame(() => {
-      raf = requestAnimationFrame(refine)
-    })
-    timers.push(
-      window.setTimeout(() => {
-        if (!cancelled) refine()
-      }, 150)
-    )
-    timers.push(
-      window.setTimeout(() => {
-        if (!cancelled) refine()
-      }, 450)
-    )
+    measureAndPackPlan(recipe, { size, style })
+      .then((measured) => {
+        if (cancelled) return
+        setPlan(measured)
+        setRefining(false)
+      })
+      .catch((err) => {
+        console.warn('Card measure failed', err)
+        if (!cancelled) setRefining(false)
+      })
 
     return () => {
       cancelled = true
-      cancelAnimationFrame(raf)
-      timers.forEach((t) => window.clearTimeout(t))
     }
-  }, [plan, size, style, layout, pageIndex])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recipeContentKey, size, style])
+
+  const pageCount = plan?.pages?.length || 1
+  const isMulti = pageCount > 1
+  const ready = Boolean(plan?.pages?.length)
+
+  useEffect(() => {
+    if (ready && pageIndex > pageCount - 1) setPageIndex(Math.max(0, pageCount - 1))
+  }, [pageCount, pageIndex, ready])
 
   useEffect(() => {
     const prev = document.body.style.overflow
@@ -171,40 +125,37 @@ export default function CardStudio({ recipe, onClose }) {
     window.setTimeout(() => setToast(null), 2200)
   }
 
-  const printLabel =
-    pageCount <= 1
-      ? 'Print card'
-      : pageCount === 2
-        ? 'Print both sides'
-        : 'Print all cards'
+  const runPrint = useCallback(async () => {
+    if (refining || !ready || printSheetOpen) return
 
-  const pdfLabel =
-    pageCount <= 1
-      ? 'Download PDF'
-      : pageCount === 2
-        ? 'Download PDF (2 sides)'
-        : `Download PDF (${pageCount} cards)`
+    setPrintSheetOpen(true)
+    await waitForPaint()
 
-  const multiCopy =
-    pageCount === 2
-      ? 'This recipe needs both sides.'
-      : pageCount >= 3
-        ? `This recipe needs ${pageCount} cards.`
-        : null
-
-  const runPrint = useCallback(() => {
     document.body.classList.add('printing-card')
+
     const cleanup = () => {
       document.body.classList.remove('printing-card')
+      setPrintSheetOpen(false)
+      faceRefs.current = []
       window.removeEventListener('afterprint', cleanup)
     }
     window.addEventListener('afterprint', cleanup)
-    window.setTimeout(() => window.print(), 80)
-  }, [])
+    window.setTimeout(() => window.print(), 120)
+  }, [refining, ready, printSheetOpen])
 
   const runPdf = useCallback(async () => {
+    if (!ready || refining || !plan || printSheetOpen) return
     setExporting(true)
+    setPrintSheetOpen(true)
+    setPdfCapturing(true)
     try {
+      const refsReady = await waitForFaceRefs(faceRefs, pageCount)
+      if (!refsReady) {
+        showToast('PDF export failed — try again.')
+        return
+      }
+      await waitForPaint()
+
       const dims = SIZE_STYLES[size] || SIZE_STYLES['4x6']
       const widthIn = parseFloat(dims.width)
       const heightIn = parseFloat(dims.height)
@@ -234,7 +185,8 @@ export default function CardStudio({ recipe, onClose }) {
       const xOffset = isCutCard ? marginX : 0
 
       for (let i = 0; i < pageCount; i++) {
-        const el = faceRefs.current[i]
+        const face = faceRefs.current[i]
+        const el = face?.querySelector('.recipe-index-card')
         if (!el) continue
 
         if (faceOnSheet >= perSheet) {
@@ -251,10 +203,21 @@ export default function CardStudio({ recipe, onClose }) {
           scale: 2,
           useCORS: true,
           logging: false,
+          backgroundColor: '#ffffff',
+          onclone: (_doc, node) => {
+            node.style.visibility = 'visible'
+            node.style.opacity = '1'
+            let parent = node.parentElement
+            while (parent) {
+              parent.style.visibility = 'visible'
+              parent.style.opacity = '1'
+              parent.style.overflow = 'visible'
+              parent = parent.parentElement
+            }
+          },
         })
         const imgData = canvas.toDataURL('image/png')
 
-        // Cut guides only for 4×6 / 5×7 — Full page has no dashed border
         if (isCutCard) {
           pdf.setDrawColor(150)
           pdf.setLineDashPattern([4, 2], 0)
@@ -267,30 +230,19 @@ export default function CardStudio({ recipe, onClose }) {
       }
 
       pdf.save(`${recipe.title.replace(/[^a-z0-9]+/gi, '_')}_card.pdf`)
-      showToast(
-        pageCount <= 1
-          ? 'PDF ready for the recipe box.'
-          : pageCount === 2
-            ? 'PDF ready — front & back included.'
-            : `PDF ready — ${pageCount} cards included.`
-      )
+      showToast('PDF ready.')
     } catch (error) {
       console.error(error)
       showToast('PDF export failed — try Print instead.')
     } finally {
       setExporting(false)
+      setPdfCapturing(false)
+      setPrintSheetOpen(false)
+      faceRefs.current = []
     }
-  }, [recipe.title, size, pageCount])
+  }, [recipe.title, size, pageCount, ready, refining, plan, printSheetOpen])
 
-  const handleExportPdf = () => {
-    runPdf()
-  }
-
-  const handlePrint = () => {
-    runPrint()
-  }
-
-  const sheets = packPageIndexes(pageCount, size)
+  const sheets = ready ? packPageIndexes(pageCount, size) : []
 
   const previewHint = (() => {
     if (!isMulti) return 'Preview — this is what prints'
@@ -301,7 +253,12 @@ export default function CardStudio({ recipe, onClose }) {
   })()
 
   const studio = (
-    <div className="card-studio" role="dialog" aria-modal="true" aria-label="Recipe card studio">
+    <div
+      className="card-studio"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Recipe card studio"
+    >
       <div className="card-studio__chrome no-print">
         <header className="card-studio__top">
           <div>
@@ -346,45 +303,24 @@ export default function CardStudio({ recipe, onClose }) {
               ))}
             </ControlGroup>
 
-            <ControlGroup label="Layout">
-              <div className="flex gap-2">
-                {[
-                  { id: 'split', label: 'Two columns' },
-                  { id: 'stacked', label: 'Stacked' },
-                ].map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => setLayout(opt.id)}
-                    className={`flex-1 px-3 py-2.5 text-sm font-semibold rounded-md border-2 transition-colors ${
-                      layout === opt.id
-                        ? 'border-gingham bg-gingham text-white'
-                        : 'border-wicker-200 bg-white text-wicker-700 hover:border-wicker-400'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </ControlGroup>
-
             <div className="card-studio__actions">
               <button
                 type="button"
-                onClick={handlePrint}
+                onClick={runPrint}
+                disabled={!ready || refining || printSheetOpen}
                 className="btn-primary w-full flex items-center justify-center gap-2"
               >
                 <Printer className="w-4 h-4" />
-                {printLabel}
+                {refining ? 'Preparing…' : printSheetOpen ? 'Opening print…' : 'Print'}
               </button>
               <button
                 type="button"
-                onClick={handleExportPdf}
-                disabled={exporting}
+                onClick={runPdf}
+                disabled={exporting || !ready || refining || printSheetOpen}
                 className="btn-secondary w-full flex items-center justify-center gap-2"
               >
                 <Download className="w-4 h-4" />
-                {exporting ? 'Making PDF…' : pdfLabel}
+                {exporting ? 'Making PDF…' : refining ? 'Preparing…' : 'Download PDF'}
               </button>
               <button type="button" onClick={onClose} className="btn-secondary w-full">
                 Done
@@ -394,7 +330,6 @@ export default function CardStudio({ recipe, onClose }) {
                 onClick={() => {
                   setSize('4x6')
                   setStyle('enamel')
-                  setLayout('split')
                   setPageIndex(0)
                 }}
                 className="w-full flex items-center justify-center gap-2 text-sm text-wicker-600 hover:text-wicker-800 py-2"
@@ -415,20 +350,28 @@ export default function CardStudio({ recipe, onClose }) {
               className={[
                 'card-studio__preview',
                 SIZE_PREVIEW_CLASS[size] || SIZE_PREVIEW_CLASS['4x6'],
+                refining ? 'card-studio__preview--refining' : '',
               ].join(' ')}
-              ref={previewRef}
             >
               <RecipeCardPrint
                 recipe={recipe}
                 size={size}
                 style={style}
-                layout={layout}
                 pageIndex={pageIndex}
                 plan={plan}
               />
+              {refining && (
+                <div className="card-studio__loader" aria-live="polite" aria-busy="true">
+                  <div className="card-studio__loader-ring" aria-hidden />
+                  <div className="card-studio__loader-card" aria-hidden>
+                    Recipe
+                  </div>
+                  <p className="card-studio__loader-text">Fitting your card…</p>
+                </div>
+              )}
             </div>
 
-            {isMulti && (
+            {ready && isMulti && (
               <div className="card-studio__sides no-print">
                 {plan.pages.map((_, i) => (
                   <button
@@ -444,55 +387,55 @@ export default function CardStudio({ recipe, onClose }) {
             )}
 
             <p className="card-studio__hint">
-              {previewHint}
-              {multiCopy ? ` · ${multiCopy}` : ''}
+              {refining ? 'Checking pagination…' : previewHint}
               <span className="card-studio__hint-size">
                 {SIZES.find((s) => s.id === size)?.printLabel}
-                {pageCount === 2 ? ' · 2-sided' : pageCount >= 3 ? ` · ${pageCount} cards` : ''}
               </span>
             </p>
           </div>
         </div>
       </div>
 
-      <div
-        className={[
-          'card-studio__print-sheet',
-          size === 'letter' ? 'card-studio__print-sheet--letter' : 'card-studio__print-sheet--cut',
-        ].join(' ')}
-        aria-hidden="true"
-      >
-        {sheets.map((faceIndexes, sheetIdx) => (
-          <div
-            key={sheetIdx}
-            className={[
-              'card-studio__print-pack',
-              sheetIdx > 0 ? 'card-studio__print-pack--break' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-          >
-            {faceIndexes.map((i) => (
-              <div
-                key={i}
-                className="card-studio__print-face"
-                ref={(el) => {
-                  faceRefs.current[i] = el
-                }}
-              >
-                <RecipeCardPrint
-                  recipe={recipe}
-                  size={size}
-                  style={style}
-                  layout={layout}
-                  pageIndex={i}
-                  plan={plan}
-                />
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
+      {printSheetOpen && ready && !refining && (
+        <div
+          className={[
+            'card-studio__print-sheet',
+            pdfCapturing ? 'card-studio__print-sheet--capture' : '',
+            size === 'letter' ? 'card-studio__print-sheet--letter' : 'card-studio__print-sheet--cut',
+          ].join(' ')}
+          aria-hidden="true"
+        >
+          {sheets.map((faceIndexes, sheetIdx) => (
+            <div
+              key={sheetIdx}
+              className={[
+                'card-studio__print-pack',
+                sheetIdx > 0 ? 'card-studio__print-pack--break' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              {faceIndexes.map((i) => (
+                <div
+                  key={i}
+                  className="card-studio__print-face"
+                  ref={(el) => {
+                    faceRefs.current[i] = el
+                  }}
+                >
+                  <RecipeCardPrint
+                    recipe={recipe}
+                    size={size}
+                    style={style}
+                    pageIndex={i}
+                    plan={plan}
+                  />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
 
       {toast && (
         <div className="card-studio__toast no-print">

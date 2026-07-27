@@ -1,6 +1,8 @@
 # Build stage for client
 FROM node:20-alpine AS client-build
 
+WORKDIR /app
+COPY shared/ ./shared/
 WORKDIR /app/client
 COPY client/package*.json ./
 RUN npm ci
@@ -24,6 +26,9 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 WORKDIR /app
+
+# Shared card planner (used by server PDF export)
+COPY shared/ ./shared/
 
 # Copy server
 COPY server/package*.json ./server/
