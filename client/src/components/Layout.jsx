@@ -136,6 +136,9 @@ export default function Layout() {
                 Privacy
               </Link>
             </p>
+            <p className="text-center text-xs text-wicker-500/90 mt-2">
+              © {new Date().getFullYear()} AppSquire Consulting Ltd. All rights reserved.
+            </p>
           </div>
         </div>
 

@@ -86,6 +86,14 @@ export default function Terms() {
         </p>
       </LegalSection>
 
+      <LegalSection title="Our content">
+        <p>
+          Index Card Kitchen, including its name, design, and software, is ©{' '}
+          {new Date().getFullYear()} AppSquire Consulting Ltd. All rights reserved. Recipe content
+          you import or enter remains yours; we do not claim ownership of your recipes.
+        </p>
+      </LegalSection>
+
       <LegalSection title="Changes">
         <p>
           We may update these terms from time to time. Continued use after changes constitutes
