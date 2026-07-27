@@ -1531,6 +1531,94 @@
   color: #fff;
 }
 
+/* —— Site footer + AppSquire Launch Lab credit —— */
+.site-footer__appsquire {
+  display: block;
+  background: linear-gradient(135deg, #f05a28 0%, #e84e1c 55%, #d94518 100%);
+  color: #fff;
+  text-decoration: none;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.site-footer__appsquire:hover {
+  filter: brightness(1.06);
+}
+
+.site-footer__appsquire:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -4px;
+}
+
+.site-footer__stamp {
+  flex-shrink: 0;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.75rem;
+  border: 2px dashed rgba(255, 255, 255, 0.75);
+  border-radius: 4px;
+  transform: rotate(-3deg);
+  background: rgba(0, 0, 0, 0.12);
+  transition: transform 0.25s ease;
+}
+
+.site-footer__appsquire:hover .site-footer__stamp {
+  transform: rotate(-1deg) scale(1.03);
+}
+
+.site-footer__appsquire-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.1rem;
+}
+
+.site-footer__appsquire-lead {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.site-footer__appsquire-name {
+  font-family: Nunito, ui-rounded, system-ui, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.site-footer__appsquire-meta {
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.88;
+  letter-spacing: 0.04em;
+}
+
+.site-footer__appsquire-arrow {
+  flex-shrink: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.site-footer__appsquire:hover .site-footer__appsquire-arrow {
+  opacity: 0.95;
+  transform: translateX(0);
+}
+
+@media (min-width: 640px) {
+  .site-footer__appsquire-text {
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
 /* —— Reduced motion preference —— */
 @media (prefers-reduced-motion: reduce) {
   *,

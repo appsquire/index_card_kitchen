@@ -121,21 +121,47 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      <footer className="mt-16 border-t-2 border-wicker-200/80 bg-enamel/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <p className="text-center font-hand text-xl text-wicker-600 mb-3">
-            Index Card Kitchen — come hungry, leave with a card
-          </p>
-          <p className="text-center text-sm text-wicker-500">
-            <Link to="/terms" className="hover:text-gingham transition-colors">
-              Terms
-            </Link>
-            {' · '}
-            <Link to="/privacy" className="hover:text-gingham transition-colors">
-              Privacy
-            </Link>
-          </p>
+      <footer className="site-footer mt-16 border-t-2 border-wicker-200/80">
+        <div className="site-footer__kitchen bg-enamel/60">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <p className="text-center font-hand text-xl text-wicker-600 mb-3">
+              Index Card Kitchen — come hungry, leave with a card
+            </p>
+            <p className="text-center text-sm text-wicker-500">
+              <Link to="/terms" className="hover:text-gingham transition-colors">
+                Terms
+              </Link>
+              {' · '}
+              <Link to="/privacy" className="hover:text-gingham transition-colors">
+                Privacy
+              </Link>
+            </p>
+          </div>
         </div>
+
+        <a
+          href="https://www.appsquire.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="site-footer__appsquire group"
+          aria-label="Built by AppSquire — visit appsquire.com"
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6">
+            <span className="site-footer__stamp" aria-hidden>
+              Launch Lab
+            </span>
+            <span className="site-footer__appsquire-text">
+              <span className="site-footer__appsquire-lead">Filed &amp; built by</span>
+              <span className="site-footer__appsquire-name">AppSquire</span>
+              <span className="site-footer__appsquire-meta">
+                Edmonton, AB · Custom software
+              </span>
+            </span>
+            <span className="site-footer__appsquire-arrow" aria-hidden>
+              →
+            </span>
+          </div>
+        </a>
       </footer>
     </div>
   )
