@@ -124,7 +124,7 @@ export default function Layout() {
       <footer className="site-footer mt-auto">
         <div className="site-footer__kitchen">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-            <p className="text-center font-hand text-lg text-wicker-600 mb-2">
+            <p className="text-center font-hand text-xl text-wicker-600 mb-3">
               Index Card Kitchen — come hungry, leave with a card
             </p>
             <p className="text-center text-sm text-wicker-500">

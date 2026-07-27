@@ -69,7 +69,7 @@ export default function Home() {
     <div className="home">
       <section className="home-intro">
         <div className="home-intro__copy">
-          <p className="font-hand text-gingham text-lg mb-2">Index Card Kitchen</p>
+          <p className="font-hand text-gingham text-xl mb-1">Index Card Kitchen</p>
           <h1 className="home-intro__title">
             Your recipes, filed like Nana kept them
           </h1>

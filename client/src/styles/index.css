@@ -1183,18 +1183,18 @@
 
 .home-intro__title {
   font-family: 'Patrick Hand', cursive;
-  font-size: clamp(2.25rem, 4.5vw, 3.25rem);
-  line-height: 1.08;
+  font-size: clamp(2.4rem, 5vw, 3.4rem);
+  line-height: 1.05;
   color: #1c2924;
-  margin: 0 0 0.65rem;
+  margin: 0 0 0.75rem;
 }
 
 .home-intro__lede {
-  font-size: 1.02rem;
+  font-size: 1.05rem;
   line-height: 1.55;
   color: #446358;
   max-width: 34rem;
-  margin: 0 0 1.1rem;
+  margin: 0 0 1.25rem;
 }
 
 .home-intro__actions {
@@ -1547,7 +1547,7 @@
 }
 
 .site-footer__kitchen {
-  background: rgba(255, 254, 250, 0.72);
+  background: rgba(255, 254, 250, 0.88);
 }
 
 .site-footer__appsquire {
@@ -1638,7 +1638,7 @@
 }
 
 .site-footer__appsquire-lead {
-  font-size: 0.62rem;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1654,7 +1654,7 @@
 
 .site-footer__appsquire-name {
   font-family: Nunito, ui-rounded, system-ui, sans-serif;
-  font-size: 1.2rem;
+  font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1;
@@ -1673,7 +1673,7 @@
 }
 
 .site-footer__appsquire-meta {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: rgba(45, 52, 54, 0.72);
   letter-spacing: 0.04em;
@@ -1702,7 +1702,7 @@
   }
 
   .site-footer__appsquire-name {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
   }
 }
 
