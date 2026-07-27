@@ -1633,24 +1633,6 @@
   transform: rotate(-1deg) scale(1.03);
 }
 
-.site-footer__logo-mark {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 7px;
-  background: linear-gradient(145deg, #f5d080 0%, #c88728 100%);
-  color: #fff;
-  font-family: Nunito, ui-rounded, system-ui, sans-serif;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  box-shadow: 0 1px 0 rgba(45, 52, 54, 0.15);
-}
-
 .site-footer__credit-text {
   display: flex;
   flex-direction: column;

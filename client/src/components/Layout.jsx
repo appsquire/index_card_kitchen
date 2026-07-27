@@ -146,9 +146,6 @@ export default function Layout() {
             <span className="site-footer__stamp" aria-hidden>
               Launch Lab
             </span>
-            <span className="site-footer__logo-mark" aria-hidden>
-              as
-            </span>
             <span className="site-footer__credit-text">
               <span className="site-footer__credit-lead">Filed &amp; built by</span>
               <span className="site-footer__credit-brand">
