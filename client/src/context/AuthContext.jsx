@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { authService } from '../services/auth'
 
 const AuthContext = createContext(null)
@@ -7,18 +7,35 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  const logout = useCallback(() => {
+    localStorage.removeItem('token')
+    setUser(null)
+  }, [])
+
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (token) {
       authService.getProfile()
-        .then(userData => setUser(userData))
+        .then((userData) => setUser(userData))
         .catch(() => {
           localStorage.removeItem('token')
+          setUser(null)
         })
         .finally(() => setLoading(false))
     } else {
       setLoading(false)
     }
+  }, [])
+
+  useEffect(() => {
+    const onUnauthorized = () => {
+      setUser(null)
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.assign('/login')
+      }
+    }
+    window.addEventListener('auth:unauthorized', onUnauthorized)
+    return () => window.removeEventListener('auth:unauthorized', onUnauthorized)
   }, [])
 
   const login = async (email, password) => {
@@ -33,11 +50,6 @@ export function AuthProvider({ children }) {
     localStorage.setItem('token', token)
     setUser(userData)
     return userData
-  }
-
-  const logout = () => {
-    localStorage.removeItem('token')
-    setUser(null)
   }
 
   const value = {

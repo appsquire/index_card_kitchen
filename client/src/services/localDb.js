@@ -59,12 +59,14 @@ export const localDb = {
   async syncRecipes(cloudRecipes) {
     const db = await getDb()
     const existing = await db.getAll('recipes')
+    const cloudIds = new Set(cloudRecipes.map((r) => r.id))
     const tx = db.transaction('recipes', 'readwrite')
     const store = tx.objectStore('recipes')
 
     // Replace cloud cache only — keep local-only (unsynced) recipes intact.
+    // Also drop synced locals that vanished from the server for this user.
     for (const recipe of existing) {
-      if (recipe.synced) {
+      if (recipe.synced && !cloudIds.has(recipe.id)) {
         await store.delete(recipe.id)
       }
     }

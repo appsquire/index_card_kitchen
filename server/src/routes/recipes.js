@@ -72,7 +72,9 @@ router.get('/', async (req, res, next) => {
       servings: row.servings,
       ingredients: row.ingredients,
       instructions: row.instructions,
-      categoryIds: row.category_ids.filter(Boolean),
+      categoryIds: Array.isArray(row.category_ids)
+        ? row.category_ids.filter(Boolean)
+        : [],
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }))
@@ -115,7 +117,9 @@ router.get('/:id', async (req, res, next) => {
       servings: row.servings,
       ingredients: row.ingredients,
       instructions: row.instructions,
-      categoryIds: row.category_ids.filter(Boolean),
+      categoryIds: Array.isArray(row.category_ids)
+        ? row.category_ids.filter(Boolean)
+        : [],
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }
@@ -150,6 +154,18 @@ router.post('/', async (req, res, next) => {
     const result = await query(
       `INSERT INTO recipes (id, user_id, title, description, source_url, image_url, prep_time, cook_time, servings, ingredients, instructions)
        VALUES (COALESCE($1, uuid_generate_v4()), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       ON CONFLICT (id) DO UPDATE SET
+         title = EXCLUDED.title,
+         description = EXCLUDED.description,
+         source_url = EXCLUDED.source_url,
+         image_url = EXCLUDED.image_url,
+         prep_time = EXCLUDED.prep_time,
+         cook_time = EXCLUDED.cook_time,
+         servings = EXCLUDED.servings,
+         ingredients = EXCLUDED.ingredients,
+         instructions = EXCLUDED.instructions,
+         updated_at = CURRENT_TIMESTAMP
+       WHERE recipes.user_id = $2
        RETURNING *`,
       [
         id || null,
@@ -166,10 +182,19 @@ router.post('/', async (req, res, next) => {
       ]
     )
 
+    // Conflict for another user's id — don't leak / overwrite.
+    if (result.rows.length === 0) {
+      return res.status(409).json({
+        message: 'A recipe with this id already exists',
+        code: '23505',
+      })
+    }
+
     const recipe = result.rows[0]
 
-    // Add category associations
-    if (categoryIds && categoryIds.length > 0) {
+    // Replace category associations when provided
+    if (Array.isArray(categoryIds)) {
+      await query('DELETE FROM recipe_categories WHERE recipe_id = $1', [recipe.id])
       for (const categoryId of categoryIds) {
         await query(
           'INSERT INTO recipe_categories (recipe_id, category_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
@@ -177,6 +202,11 @@ router.post('/', async (req, res, next) => {
         )
       }
     }
+
+    const cats = await query(
+      'SELECT category_id FROM recipe_categories WHERE recipe_id = $1',
+      [recipe.id]
+    )
 
     res.status(201).json({
       id: recipe.id,
@@ -189,11 +219,17 @@ router.post('/', async (req, res, next) => {
       servings: recipe.servings,
       ingredients: recipe.ingredients,
       instructions: recipe.instructions,
-      categoryIds: categoryIds || [],
+      categoryIds: cats.rows.map((row) => row.category_id),
       createdAt: recipe.created_at,
       updatedAt: recipe.updated_at,
     })
   } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({
+        message: 'A recipe with this id already exists',
+        code: '23505',
+      })
+    }
     next(error)
   }
 })
