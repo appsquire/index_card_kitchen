@@ -7,7 +7,7 @@ import { useRecipes } from '../context/RecipeContext'
 export default function Register() {
   const navigate = useNavigate()
   const { register, isAuthenticated } = useAuth()
-  const { syncToCloud, recipes } = useRecipes()
+  const { recipes } = useRecipes()
   const [formData, setFormData] = useState({ name: '', email: '', password: '', confirmPassword: '' })
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -25,12 +25,21 @@ export default function Register() {
     e.preventDefault()
     setError(null)
 
-    if (formData.password !== formData.confirmPassword) {
+    const form = e.currentTarget
+    const data = new FormData(form)
+    const name = String(data.get('name') || formData.name || '').trim()
+    const email = String(data.get('email') || formData.email || '').trim()
+    const password = String(data.get('password') || formData.password || '')
+    const confirmPassword = String(
+      data.get('confirmPassword') || formData.confirmPassword || ''
+    )
+
+    if (password !== confirmPassword) {
       setError('Passwords do not match')
       return
     }
 
-    if (formData.password.length < 8) {
+    if (password.length < 8) {
       setError('Password must be at least 8 characters')
       return
     }
@@ -42,11 +51,15 @@ export default function Register() {
 
     setLoading(true)
     try {
-      await register(formData.name, formData.email, formData.password)
-      await syncToCloud()
+      await register(name, email, password)
+      // RecipeContext loads/syncs when isAuthenticated flips — avoid a second parallel upload.
       navigate('/')
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create account')
+      if (!err.response) {
+        setError('Could not reach the server. Check Wi‑Fi and try again.')
+      } else {
+        setError(err.response?.data?.message || 'Failed to create account')
+      }
     } finally {
       setLoading(false)
     }
@@ -95,6 +108,8 @@ export default function Register() {
               <input
                 type="text"
                 id="name"
+                name="name"
+                autoComplete="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="input pl-10"
@@ -113,6 +128,9 @@ export default function Register() {
               <input
                 type="email"
                 id="email"
+                name="email"
+                autoComplete="email"
+                inputMode="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="input pl-10"
@@ -131,6 +149,8 @@ export default function Register() {
               <input
                 type="password"
                 id="password"
+                name="password"
+                autoComplete="new-password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="input pl-10"
@@ -151,6 +171,8 @@ export default function Register() {
               <input
                 type="password"
                 id="confirmPassword"
+                name="confirmPassword"
+                autoComplete="new-password"
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                 className="input pl-10"

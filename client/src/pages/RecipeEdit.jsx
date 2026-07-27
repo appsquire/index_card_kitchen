@@ -7,11 +7,19 @@ import RecipeForm from '../components/RecipeForm'
 export default function RecipeEdit() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { getRecipe, updateRecipe } = useRecipes()
+  const { getRecipe, updateRecipe, loading: recipesLoading } = useRecipes()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
   const recipe = getRecipe(id)
+
+  if (recipesLoading) {
+    return (
+      <div className="text-center py-16">
+        <p className="text-wicker-600 font-semibold">Loading recipe…</p>
+      </div>
+    )
+  }
 
   if (!recipe) {
     return (

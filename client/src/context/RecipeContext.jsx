@@ -6,108 +6,73 @@ import { buildDefaultCategories } from '../data/defaultCategories'
 
 const RecipeContext = createContext(null)
 
-function sortByCreatedAt(recipes) {
-  return [...recipes].sort(
-    (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
-  )
-}
-
-function mergeCloudAndLocal(cloudRecipes, unsyncedRecipes) {
-  const byId = new Map()
-  for (const recipe of cloudRecipes) {
-    byId.set(recipe.id, { ...recipe, synced: true })
-  }
-  for (const recipe of unsyncedRecipes) {
-    if (!byId.has(recipe.id)) {
-      byId.set(recipe.id, recipe)
-    }
-  }
-  return sortByCreatedAt([...byId.values()])
-}
-
 export function RecipeProvider({ children }) {
-  const { isAuthenticated, user, loading: authLoading } = useAuth()
+  const { isAuthenticated, loading: authLoading } = useAuth()
   const [recipes, setRecipes] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
-  const loadGenRef = useRef(0)
-  const wasAuthenticatedRef = useRef(false)
+  const uploadInFlight = useRef(null)
 
-  // Upload local-only recipes to the cloud. Continues past individual failures
-  // so one bad card doesn't block the rest of the box from syncing.
-  const uploadUnsyncedRecipes = async () => {
+  // Upload local-only recipes to the cloud. Shared promise so login + effect
+  // cannot double-POST the same recipes.
+  const uploadUnsyncedRecipes = useCallback(async () => {
     if (!localStorage.getItem('token')) return
+    if (uploadInFlight.current) return uploadInFlight.current
 
-    const unsyncedRecipes = await localDb.getUnsyncedRecipes()
-    for (const recipe of unsyncedRecipes) {
-      const { synced, ...recipeData } = recipe
-      try {
-        const saved = await recipeApi.create(recipeData)
-        // Prefer the server copy (same id when client sent one).
-        await localDb.saveRecipe({ ...saved, synced: true })
-        if (saved.id !== recipe.id) {
-          await localDb.deleteRecipe(recipe.id)
-        }
-      } catch (error) {
-        const status = error.response?.status
-        const code = error.response?.data?.code
-        const message = String(error.response?.data?.message || error.message || '')
-        // Already on the server (re-upload / race) — treat as synced.
-        if (
-          status === 409 ||
-          code === '23505' ||
-          /duplicate|unique|already exists/i.test(message)
-        ) {
+    uploadInFlight.current = (async () => {
+      const unsyncedRecipes = await localDb.getUnsyncedRecipes()
+      for (const recipe of unsyncedRecipes) {
+        try {
+          const recipeData = { ...recipe }
+          delete recipeData.synced
+          await recipeApi.create(recipeData)
           await localDb.markSynced(recipe.id)
-          continue
+        } catch (error) {
+          // Duplicate id from a concurrent upload / retry — treat as synced.
+          const status = error.response?.status
+          if (status === 409 || status === 200 || status === 201) {
+            await localDb.markSynced(recipe.id)
+            continue
+          }
+          console.warn('Failed to upload recipe', recipe.id, error)
         }
-        console.error('Failed to upload recipe:', recipe.id, error)
       }
-    }
-  }
+    })().finally(() => {
+      uploadInFlight.current = null
+    })
 
+    return uploadInFlight.current
+  }, [])
+
+  // Load recipes from local DB or API
   const loadRecipes = useCallback(async () => {
-    const gen = ++loadGenRef.current
     setLoading(true)
     try {
       if (isAuthenticated) {
         await uploadUnsyncedRecipes()
-        if (gen !== loadGenRef.current) return
-
         const cloudRecipes = await recipeApi.getAll()
-        if (gen !== loadGenRef.current) return
-
         await localDb.syncRecipes(cloudRecipes)
-        const unsynced = await localDb.getUnsyncedRecipes()
-        if (gen !== loadGenRef.current) return
-
-        setRecipes(mergeCloudAndLocal(cloudRecipes, unsynced))
+        // Prefer IndexedDB view: cloud cache + any still-unsynced locals.
+        setRecipes(await localDb.getAllRecipes())
       } else {
-        // Only wipe cloud cache when we know there is no session token.
-        // Never clear while auth is still resolving a stored token.
-        if (!localStorage.getItem('token')) {
-          await localDb.clearCloudCache()
-        }
-        if (gen !== loadGenRef.current) return
-
+        // Auth has finished resolving — safe to drop a previous session's cloud cache.
+        // Never call this while authLoading (token still being validated).
+        await localDb.clearCloudCache()
         const localRecipes = await localDb.getAllRecipes()
-        if (gen !== loadGenRef.current) return
-
         setRecipes(localRecipes.filter((r) => !r.synced))
       }
     } catch (error) {
       console.error('Failed to load recipes:', error)
-      if (gen !== loadGenRef.current) return
-      // Offline / API error — keep whatever is still in IndexedDB (synced + not).
       const localRecipes = await localDb.getAllRecipes()
-      if (gen !== loadGenRef.current) return
-      setRecipes(sortByCreatedAt(localRecipes))
+      // Offline or API error — show everything we still have cached locally.
+      setRecipes(localRecipes)
     } finally {
-      if (gen === loadGenRef.current) setLoading(false)
+      setLoading(false)
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, uploadUnsyncedRecipes])
 
+  // Load categories — seed kitchen defaults if the box is empty
   const loadCategories = useCallback(async () => {
     try {
       if (isAuthenticated) {
@@ -130,52 +95,35 @@ export function RecipeProvider({ children }) {
     }
   }, [isAuthenticated])
 
-  // Wait for AuthContext to finish checking the stored token before deciding
-  // logged-in vs logged-out. Premature "logged out" used to clearCloudCache()
-  // and wipe the user's recipes from IndexedDB.
+  // Wait for AuthContext to finish checking the token before loading/clearing.
   useEffect(() => {
-    if (authLoading) return
-
-    const justLoggedOut = wasAuthenticatedRef.current && !isAuthenticated
-    wasAuthenticatedRef.current = isAuthenticated
-
-    if (justLoggedOut && !localStorage.getItem('token')) {
-      localDb.clearCloudCache().finally(() => {
-        loadRecipes()
-        loadCategories()
-      })
+    if (authLoading) {
+      setLoading(true)
       return
     }
-
     loadRecipes()
     loadCategories()
-  }, [authLoading, isAuthenticated, loadRecipes, loadCategories, user])
+  }, [authLoading, loadRecipes, loadCategories])
 
   // Sync local recipes to cloud when user logs in (token may exist before React re-renders).
   const syncToCloud = async () => {
     if (!localStorage.getItem('token')) return
 
     setSyncing(true)
-    const gen = ++loadGenRef.current
     try {
       await uploadUnsyncedRecipes()
-      if (gen !== loadGenRef.current) return
-
       const cloudRecipes = await recipeApi.getAll()
-      if (gen !== loadGenRef.current) return
-
       await localDb.syncRecipes(cloudRecipes)
-      const unsynced = await localDb.getUnsyncedRecipes()
-      if (gen !== loadGenRef.current) return
-
-      setRecipes(mergeCloudAndLocal(cloudRecipes, unsynced))
+      setRecipes(await localDb.getAllRecipes())
     } catch (error) {
       console.error('Sync failed:', error)
-      if (gen !== loadGenRef.current) return
-      const localRecipes = await localDb.getAllRecipes()
-      setRecipes(sortByCreatedAt(localRecipes))
+      try {
+        setRecipes(await localDb.getAllRecipes())
+      } catch {
+        /* ignore */
+      }
     } finally {
-      if (gen === loadGenRef.current) setSyncing(false)
+      setSyncing(false)
     }
   }
 
@@ -189,22 +137,15 @@ export function RecipeProvider({ children }) {
     }
 
     if (isAuthenticated) {
-      try {
-        const savedRecipe = await recipeApi.create(recipe)
-        setRecipes((prev) => [savedRecipe, ...prev.filter((r) => r.id !== savedRecipe.id)])
-        await localDb.saveRecipe({ ...savedRecipe, synced: true })
-        return savedRecipe
-      } catch (error) {
-        // Keep a local copy so the card isn't lost if the network blips.
-        await localDb.saveRecipe({ ...recipe, synced: false })
-        setRecipes((prev) => [recipe, ...prev.filter((r) => r.id !== recipe.id)])
-        throw error
-      }
+      const savedRecipe = await recipeApi.create(recipe)
+      setRecipes((prev) => [savedRecipe, ...prev.filter((r) => r.id !== savedRecipe.id)])
+      await localDb.saveRecipe({ ...savedRecipe, synced: true })
+      return savedRecipe
+    } else {
+      await localDb.saveRecipe({ ...recipe, synced: false })
+      setRecipes((prev) => [recipe, ...prev])
+      return recipe
     }
-
-    await localDb.saveRecipe({ ...recipe, synced: false })
-    setRecipes((prev) => [recipe, ...prev])
-    return recipe
   }
 
   const updateRecipe = async (id, updates) => {
@@ -214,35 +155,22 @@ export function RecipeProvider({ children }) {
     }
 
     if (isAuthenticated) {
-      try {
-        const updatedRecipe = await recipeApi.update(id, updatedData)
-        setRecipes((prev) => prev.map((r) => (r.id === id ? updatedRecipe : r)))
-        await localDb.saveRecipe({ ...updatedRecipe, synced: true })
-        return updatedRecipe
-      } catch (error) {
-        const existingRecipe = recipes.find((r) => r.id === id)
-        const updatedRecipe = { ...existingRecipe, ...updatedData, synced: false }
-        await localDb.saveRecipe(updatedRecipe)
-        setRecipes((prev) => prev.map((r) => (r.id === id ? updatedRecipe : r)))
-        throw error
-      }
+      const updatedRecipe = await recipeApi.update(id, updatedData)
+      setRecipes((prev) => prev.map((r) => (r.id === id ? updatedRecipe : r)))
+      await localDb.saveRecipe({ ...updatedRecipe, synced: true })
+      return updatedRecipe
+    } else {
+      const existingRecipe = recipes.find((r) => r.id === id)
+      const updatedRecipe = { ...existingRecipe, ...updatedData }
+      await localDb.saveRecipe({ ...updatedRecipe, synced: false })
+      setRecipes((prev) => prev.map((r) => (r.id === id ? updatedRecipe : r)))
+      return updatedRecipe
     }
-
-    const existingRecipe = recipes.find((r) => r.id === id)
-    const updatedRecipe = { ...existingRecipe, ...updatedData }
-    await localDb.saveRecipe({ ...updatedRecipe, synced: false })
-    setRecipes((prev) => prev.map((r) => (r.id === id ? updatedRecipe : r)))
-    return updatedRecipe
   }
 
   const deleteRecipe = async (id) => {
     if (isAuthenticated) {
-      try {
-        await recipeApi.delete(id)
-      } catch (error) {
-        // If the server already lacks it, still drop the local copy.
-        if (error.response?.status !== 404) throw error
-      }
+      await recipeApi.delete(id)
     }
     await localDb.deleteRecipe(id)
     setRecipes((prev) => prev.filter((r) => r.id !== id))
@@ -264,11 +192,11 @@ export function RecipeProvider({ children }) {
       setCategories((prev) => [...prev, savedCategory])
       await localDb.saveCategory(savedCategory)
       return savedCategory
+    } else {
+      await localDb.saveCategory(category)
+      setCategories((prev) => [...prev, category])
+      return category
     }
-
-    await localDb.saveCategory(category)
-    setCategories((prev) => [...prev, category])
-    return category
   }
 
   const updateCategory = async (id, updates) => {
@@ -277,13 +205,13 @@ export function RecipeProvider({ children }) {
       setCategories((prev) => prev.map((c) => (c.id === id ? updatedCategory : c)))
       await localDb.saveCategory(updatedCategory)
       return updatedCategory
+    } else {
+      const existingCategory = categories.find((c) => c.id === id)
+      const updatedCategory = { ...existingCategory, ...updates }
+      await localDb.saveCategory(updatedCategory)
+      setCategories((prev) => prev.map((c) => (c.id === id ? updatedCategory : c)))
+      return updatedCategory
     }
-
-    const existingCategory = categories.find((c) => c.id === id)
-    const updatedCategory = { ...existingCategory, ...updates }
-    await localDb.saveCategory(updatedCategory)
-    setCategories((prev) => prev.map((c) => (c.id === id ? updatedCategory : c)))
-    return updatedCategory
   }
 
   const deleteCategory = async (id) => {
@@ -327,11 +255,7 @@ export function RecipeProvider({ children }) {
     refreshRecipes: loadRecipes,
   }
 
-  return (
-    <RecipeContext.Provider value={value}>
-      {children}
-    </RecipeContext.Provider>
-  )
+  return <RecipeContext.Provider value={value}>{children}</RecipeContext.Provider>
 }
 
 export function useRecipes() {

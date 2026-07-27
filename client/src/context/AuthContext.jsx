@@ -15,7 +15,8 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (token) {
-      authService.getProfile()
+      authService
+        .getProfile()
         .then((userData) => setUser(userData))
         .catch(() => {
           localStorage.removeItem('token')
@@ -27,15 +28,14 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  // Soft logout from api 401 interceptor (avoids hard reload wiping in-flight state).
   useEffect(() => {
-    const onUnauthorized = () => {
+    const onForcedLogout = () => {
+      localStorage.removeItem('token')
       setUser(null)
-      if (!window.location.pathname.startsWith('/login')) {
-        window.location.assign('/login')
-      }
     }
-    window.addEventListener('auth:unauthorized', onUnauthorized)
-    return () => window.removeEventListener('auth:unauthorized', onUnauthorized)
+    window.addEventListener('auth:logout', onForcedLogout)
+    return () => window.removeEventListener('auth:logout', onForcedLogout)
   }, [])
 
   const login = async (email, password) => {
@@ -61,11 +61,7 @@ export function AuthProvider({ children }) {
     logout,
   }
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

@@ -7,6 +7,7 @@ import {
   Edit,
   Trash2,
   ArrowLeft,
+  Type,
 } from 'lucide-react'
 import { useRecipes } from '../context/RecipeContext'
 import CardStudio from '../components/CardStudio'
@@ -14,11 +15,28 @@ import CardStudio from '../components/CardStudio'
 export default function RecipeDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { getRecipe, deleteRecipe, categories } = useRecipes()
+  const { getRecipe, deleteRecipe, categories, loading } = useRecipes()
   const [showCardStudio, setShowCardStudio] = useState(false)
+  const [largeText, setLargeText] = useState(() => {
+    try {
+      const saved = localStorage.getItem('recipeLargeText')
+      if (saved === null) return true // default on — easier counter / distant reading
+      return saved === 'true'
+    } catch {
+      return true
+    }
+  })
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const recipe = getRecipe(id)
+
+  if (loading) {
+    return (
+      <div className="text-center py-16">
+        <p className="text-wicker-600 font-semibold">Loading recipe…</p>
+      </div>
+    )
+  }
 
   if (!recipe) {
     return (
@@ -46,6 +64,15 @@ export default function RecipeDetail() {
     navigate('/')
   }
 
+  const toggleLargeText = (enabled) => {
+    setLargeText(enabled)
+    try {
+      localStorage.setItem('recipeLargeText', String(enabled))
+    } catch {
+      /* ignore */
+    }
+  }
+
   if (showCardStudio) {
     return (
       <CardStudio
@@ -56,7 +83,7 @@ export default function RecipeDetail() {
   }
 
   return (
-    <div>
+    <div className={largeText ? 'recipe-detail recipe-detail--large-text' : 'recipe-detail'}>
       <Link
         to="/"
         className="inline-flex items-center gap-1 text-wicker-600 hover:text-gingham mb-6 font-semibold"
@@ -78,12 +105,12 @@ export default function RecipeDetail() {
               </div>
             )}
 
-            <h1 className="text-4xl md:text-5xl text-wicker-900 leading-tight">
+            <h1 className="recipe-detail__title text-4xl md:text-5xl text-wicker-900 leading-tight">
               {recipe.title}
             </h1>
 
             {recipe.description && (
-              <p className="mt-4 text-lg text-wicker-600 leading-relaxed">
+              <p className="recipe-detail__description mt-4 text-lg text-wicker-600 leading-relaxed">
                 {recipe.description}
               </p>
             )}
@@ -154,13 +181,13 @@ export default function RecipeDetail() {
             )}
           </div>
 
-          <section className="card">
-            <h2 className="text-2xl text-wicker-900 mb-4">Ingredients</h2>
+          <section className="card recipe-detail__section">
+            <h2 className="recipe-detail__heading text-2xl text-wicker-900 mb-4">Ingredients</h2>
             <ul className="space-y-2">
               {recipe.ingredients?.map((ing, idx) => (
                 <li
                   key={idx}
-                  className="flex items-start gap-3 text-wicker-700 py-1"
+                  className="recipe-detail__ingredient flex items-start gap-3 text-wicker-700 py-1"
                 >
                   <input
                     type="checkbox"
@@ -172,12 +199,12 @@ export default function RecipeDetail() {
             </ul>
           </section>
 
-          <section className="card">
-            <h2 className="text-2xl text-wicker-900 mb-4">Instructions</h2>
+          <section className="card recipe-detail__section">
+            <h2 className="recipe-detail__heading text-2xl text-wicker-900 mb-4">Instructions</h2>
             <ol className="space-y-6">
               {recipe.instructions?.map((inst, idx) => (
-                <li key={idx} className="flex gap-4">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gingham text-white flex items-center justify-center text-sm font-bold">
+                <li key={idx} className="recipe-detail__step flex gap-4">
+                  <span className="recipe-detail__step-num flex-shrink-0 w-8 h-8 rounded-full bg-gingham text-white flex items-center justify-center text-sm font-bold">
                     {idx + 1}
                   </span>
                   <p className="text-wicker-700 pt-1 leading-relaxed">{inst.step}</p>
@@ -189,11 +216,30 @@ export default function RecipeDetail() {
 
         <div className="lg:col-span-1">
           <div className="card sticky top-24 space-y-4">
-            {/* Mini card preview */}
+            <label className="recipe-detail__large-text-toggle flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={largeText}
+                onChange={(e) => toggleLargeText(e.target.checked)}
+                className="mt-1 rounded border-wicker-300 text-gingham focus:ring-gingham"
+              />
+              <span>
+                <span className="flex items-center gap-1.5 font-semibold text-wicker-800 text-sm">
+                  <Type className="w-4 h-4 text-gingham" aria-hidden />
+                  Large text
+                </span>
+                <span className="block text-xs text-wicker-500 mt-0.5">
+                  Bigger type for cooking — easier to read from across the counter
+                </span>
+              </span>
+            </label>
+
+            <hr className="border-wicker-200" />
+
             <button
               onClick={() => setShowCardStudio(true)}
               className="group w-full cursor-pointer"
-              aria-label="Open card studio — print or download PDF"
+              aria-label="View recipe card"
             >
               <div
                 className="relative overflow-hidden rounded-lg shadow-sm group-hover:shadow-md transition-all"
@@ -215,9 +261,11 @@ export default function RecipeDetail() {
               </div>
               <p className="mt-2 text-center">
                 <span className="text-sm font-semibold text-wicker-700 group-hover:text-gingham transition-colors">
-                  Make recipe card
+                  View recipe card
                 </span>
-                <span className="block text-xs text-wicker-500 mt-0.5">Print or PDF</span>
+                <span className="block text-xs text-wicker-500 mt-0.5">
+                  View, save an image, or print
+                </span>
               </p>
             </button>
 

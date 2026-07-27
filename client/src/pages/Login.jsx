@@ -2,12 +2,10 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Mail, Lock, AlertCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { useRecipes } from '../context/RecipeContext'
 
 export default function Login() {
   const navigate = useNavigate()
   const { login, isAuthenticated } = useAuth()
-  const { syncToCloud } = useRecipes()
   const [formData, setFormData] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -23,12 +21,42 @@ export default function Login() {
     setLoading(true)
     setError(null)
 
+    // Prefer live DOM values — iOS Chrome/WebKit autofill often skips React onChange,
+    // and password managers store different secrets per origin (localhost vs LAN IP).
+    const form = e.currentTarget
+    const emailInput = form.elements.namedItem('email')
+    const passwordInput = form.elements.namedItem('password')
+    const email = String(
+      (emailInput && 'value' in emailInput ? emailInput.value : '') || formData.email || ''
+    )
+      .trim()
+      .toLowerCase()
+    const password = String(
+      (passwordInput && 'value' in passwordInput ? passwordInput.value : '') ||
+        formData.password ||
+        ''
+    )
+
+    if (!email || !password) {
+      setError('Enter your email and password (type them in — don’t rely on autofill).')
+      setLoading(false)
+      return
+    }
+
     try {
-      await login(formData.email, formData.password)
-      await syncToCloud()
+      await login(email, password)
+      // RecipeContext loads/syncs when isAuthenticated flips — avoid a second parallel upload.
       navigate('/')
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid email or password')
+      if (!err.response) {
+        setError('Could not reach the server. Check Wi‑Fi and try again.')
+      } else if (err.response?.status === 401) {
+        setError(
+          'Invalid email or password. If the fields looked filled in, try typing them manually — browsers sometimes autofill the wrong saved password for this address.'
+        )
+      } else {
+        setError(err.response?.data?.message || 'Could not sign in')
+      }
     } finally {
       setLoading(false)
     }
@@ -63,6 +91,12 @@ export default function Login() {
               <input
                 type="email"
                 id="email"
+                name="email"
+                autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                inputMode="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="input pl-10"
@@ -81,6 +115,8 @@ export default function Login() {
               <input
                 type="password"
                 id="password"
+                name="password"
+                autoComplete="current-password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="input pl-10"
@@ -89,6 +125,11 @@ export default function Login() {
               />
             </div>
           </div>
+
+          <p className="text-xs text-wicker-500 leading-relaxed">
+            If sign-in fails after autofill, clear the fields and type your password yourself —
+            browsers often store different passwords per site address.
+          </p>
 
           <button
             type="submit"

@@ -13,17 +13,21 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Handle auth errors without nuking the page mid-sync.
-// RecipeContext waits on AuthContext; a hard redirect here used to race with
-// clearCloudCache and make recipes look like they vanished.
+// Handle auth errors — soft logout so RecipeContext can keep local cache intact
+// instead of a hard reload that races clearCloudCache.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      const hadToken = Boolean(localStorage.getItem('token'))
-      localStorage.removeItem('token')
-      if (hadToken && !window.location.pathname.startsWith('/login')) {
-        window.dispatchEvent(new CustomEvent('auth:unauthorized'))
+      const url = String(error.config?.url || '')
+      const isAuthAttempt =
+        url.includes('/auth/login') || url.includes('/auth/register')
+      if (!isAuthAttempt) {
+        localStorage.removeItem('token')
+        window.dispatchEvent(new Event('auth:logout'))
+        if (!window.location.pathname.startsWith('/login')) {
+          window.location.assign('/login')
+        }
       }
     }
     return Promise.reject(error)

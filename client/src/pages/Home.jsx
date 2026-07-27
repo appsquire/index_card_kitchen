@@ -143,7 +143,7 @@ export default function Home() {
               </div>
               <h2 className="font-hand text-3xl text-enamel mb-2">Open box, empty slots</h2>
               <p className="text-butter-light/90 max-w-md mx-auto mb-4 leading-relaxed">
-                First card’s the hardest. File a family favorite or pull one in from a link —
+                File a family favorite or pull one in from a link —
                 it’ll show up here like it belongs in a wooden box on the counter.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">

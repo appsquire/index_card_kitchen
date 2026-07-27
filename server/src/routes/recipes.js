@@ -72,9 +72,7 @@ router.get('/', async (req, res, next) => {
       servings: row.servings,
       ingredients: row.ingredients,
       instructions: row.instructions,
-      categoryIds: Array.isArray(row.category_ids)
-        ? row.category_ids.filter(Boolean)
-        : [],
+      categoryIds: row.category_ids.filter(Boolean),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }))
@@ -117,9 +115,7 @@ router.get('/:id', async (req, res, next) => {
       servings: row.servings,
       ingredients: row.ingredients,
       instructions: row.instructions,
-      categoryIds: Array.isArray(row.category_ids)
-        ? row.category_ids.filter(Boolean)
-        : [],
+      categoryIds: row.category_ids.filter(Boolean),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }
@@ -164,7 +160,7 @@ router.post('/', async (req, res, next) => {
          servings = EXCLUDED.servings,
          ingredients = EXCLUDED.ingredients,
          instructions = EXCLUDED.instructions,
-         updated_at = CURRENT_TIMESTAMP
+         updated_at = NOW()
        WHERE recipes.user_id = $2
        RETURNING *`,
       [
@@ -182,19 +178,26 @@ router.post('/', async (req, res, next) => {
       ]
     )
 
-    // Conflict for another user's id — don't leak / overwrite.
-    if (result.rows.length === 0) {
-      return res.status(409).json({
-        message: 'A recipe with this id already exists',
-        code: '23505',
-      })
+    let recipe = result.rows[0]
+
+    // Conflict with another user's id (WHERE blocked the update) — fetch ours or 409.
+    if (!recipe && id) {
+      const existing = await query(
+        'SELECT * FROM recipes WHERE id = $1 AND user_id = $2',
+        [id, req.user.id]
+      )
+      recipe = existing.rows[0]
+      if (!recipe) {
+        return res.status(409).json({ message: 'Recipe id already exists' })
+      }
     }
 
-    const recipe = result.rows[0]
+    if (!recipe) {
+      return res.status(500).json({ message: 'Failed to create recipe' })
+    }
 
-    // Replace category associations when provided
-    if (Array.isArray(categoryIds)) {
-      await query('DELETE FROM recipe_categories WHERE recipe_id = $1', [recipe.id])
+    // Add category associations
+    if (categoryIds && categoryIds.length > 0) {
       for (const categoryId of categoryIds) {
         await query(
           'INSERT INTO recipe_categories (recipe_id, category_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
@@ -202,11 +205,6 @@ router.post('/', async (req, res, next) => {
         )
       }
     }
-
-    const cats = await query(
-      'SELECT category_id FROM recipe_categories WHERE recipe_id = $1',
-      [recipe.id]
-    )
 
     res.status(201).json({
       id: recipe.id,
@@ -219,17 +217,11 @@ router.post('/', async (req, res, next) => {
       servings: recipe.servings,
       ingredients: recipe.ingredients,
       instructions: recipe.instructions,
-      categoryIds: cats.rows.map((row) => row.category_id),
+      categoryIds: categoryIds || [],
       createdAt: recipe.created_at,
       updatedAt: recipe.updated_at,
     })
   } catch (error) {
-    if (error.code === '23505') {
-      return res.status(409).json({
-        message: 'A recipe with this id already exists',
-        code: '23505',
-      })
-    }
     next(error)
   }
 })
