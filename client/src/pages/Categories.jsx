@@ -200,21 +200,21 @@ export default function Categories() {
                     style={{ backgroundColor: category.color || PRESET_COLORS[0] }}
                   />
                   <span className="font-medium text-wicker-800">{category.name}</span>
-                  <span className="text-sm text-wicker-500">
+                  <span className="text-sm text-wicker-600">
                     {count} recipe{count !== 1 ? 's' : ''}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleEdit(category)}
-                    className="p-2 text-wicker-400 hover:text-gingham transition-colors"
+                    className="p-2 text-wicker-500 hover:text-gingham transition-colors"
                     title="Edit"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(category.id)}
-                    className="p-2 text-wicker-400 hover:text-red-600 transition-colors"
+                    className="p-2 text-wicker-500 hover:text-red-600 transition-colors"
                     title="Delete"
                   >
                     <Trash2 className="w-4 h-4" />

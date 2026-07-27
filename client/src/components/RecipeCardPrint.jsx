@@ -44,6 +44,8 @@ const FRACTIONS = [
   [7 / 8, '⅞'],
 ]
 
+export const MAX_CARD_PAGES = 8
+
 /** Turn scraped floats like 0.666666686534888 into “⅔”. */
 export function formatQuantity(value) {
   if (value == null || value === '') return ''
@@ -103,83 +105,251 @@ function formatMinutes(n) {
   return n >= 60 ? `${Math.floor(n / 60)}H${n % 60 ? ` ${n % 60}M` : ''}` : `${n}M`
 }
 
+/** Studio chip label: Front/Back when N=2; Page N when N≥3. */
+export function getPageChipLabel(pageIndex, totalPages) {
+  if (totalPages === 2) return pageIndex === 0 ? 'Front' : 'Back'
+  return `Page ${pageIndex + 1}`
+}
+
+/** Printed/PDF footer tag; null when single page. */
+export function getPageFooterTag(pageIndex, totalPages) {
+  if (totalPages <= 1) return null
+  if (totalPages === 2) return `Side ${pageIndex + 1} of 2`
+  return `Page ${pageIndex + 1} of ${totalPages}`
+}
+
+/** How many card faces fit on one letter sheet. */
+export function facesPerLetterSheet(size) {
+  if (size === '4x6' || size === '5x7') return 2
+  return 1
+}
+
+/** Pack 0..pageCount-1 indexes into letter-sheet groups. */
+export function packPageIndexes(pageCount, size) {
+  const per = facesPerLetterSheet(size)
+  const sheets = []
+  for (let i = 0; i < pageCount; i += per) {
+    const faceIndexes = []
+    for (let j = i; j < Math.min(i + per, pageCount); j++) faceIndexes.push(j)
+    sheets.push(faceIndexes)
+  }
+  return sheets
+}
+
+function annotatePageNotes(pages) {
+  // Footer page tag is enough — no in-card “…continued” banners.
+  return pages.map((page) => ({ ...page, note: null }))
+}
+
+function trimEmptyPages(pages) {
+  const mapped = pages.map((p) => ({
+    ingredients: [...(p.ingredients || [])],
+    instructions: [...(p.instructions || [])],
+    note: null,
+  }))
+  const nonempty = mapped.filter(
+    (p) => p.ingredients.length > 0 || p.instructions.length > 0
+  )
+  return nonempty.length > 0
+    ? nonempty
+    : [{ ingredients: [], instructions: [], note: null }]
+}
+
+/** Conservative per-face budgets — prefer an extra page over clipping. */
+function pageLimits(size) {
+  if (size === 'letter') {
+    return { stackedIng: 18, stackedStep: 10, splitIng: 28, splitStep: 14 }
+  }
+  if (size === '5x7') {
+    return { stackedIng: 8, stackedStep: 5, splitIng: 12, splitStep: 6 }
+  }
+  // 4x6 — tight on purpose
+  return { stackedIng: 5, stackedStep: 3, splitIng: 8, splitStep: 3 }
+}
+
 /**
- * Decide what goes on the front vs back so content isn’t clipped.
- * Stacked cards: ingredients on front, directions on back (classic recipe box).
- * Split cards: fit what we can on front, continue on back.
+ * Pack ingredients then directions onto pages (stream order).
+ * Directions start only after all ingredients are placed.
+ */
+function packStreamPages(ingredients, instructions, { ingCap, stepCap }) {
+  const pages = []
+  let ingRemaining = [...ingredients]
+  let stepRemaining = [...instructions]
+
+  if (ingRemaining.length === 0 && stepRemaining.length === 0) {
+    return [{ ingredients: [], instructions: [] }]
+  }
+
+  while (
+    (ingRemaining.length > 0 || stepRemaining.length > 0) &&
+    pages.length < MAX_CARD_PAGES
+  ) {
+    const pageIng = ingRemaining.splice(0, ingCap)
+    let pageSteps = []
+    if (ingRemaining.length === 0) {
+      pageSteps = stepRemaining.splice(0, stepCap)
+    }
+    if (pageIng.length === 0 && pageSteps.length === 0) break
+    pages.push({ ingredients: pageIng, instructions: pageSteps })
+  }
+
+  if (ingRemaining.length || stepRemaining.length) {
+    if (pages.length === 0) {
+      pages.push({ ingredients: [], instructions: [] })
+    }
+    const last = pages[pages.length - 1]
+    last.ingredients.push(...ingRemaining)
+    last.instructions.push(...stepRemaining)
+  }
+
+  return pages
+}
+
+/**
+ * Multi-page plan. Seeds with size-based budgets (reliable), then Card Studio
+ * measure-and-spill can still move items if a face clips.
  */
 export function planRecipeCard(recipe, { size = '4x6', layout = 'split' } = {}) {
   const ingredients = recipe.ingredients?.filter((i) => i?.name?.trim()) || []
   const instructions = recipe.instructions?.filter((i) => i?.step?.trim()) || []
+  const strategy = layout === 'stacked' ? 'stacked' : 'split'
+  const limits = pageLimits(size)
 
-  if (size === 'letter') {
-    const ingLimit = 28
-    const stepLimit = 20
-    const needsBack =
-      ingredients.length > ingLimit || instructions.length > stepLimit
-    return {
-      needsBack,
-      front: {
-        ingredients: ingredients.slice(0, ingLimit),
-        instructions: instructions.slice(0, stepLimit),
-      },
-      back: {
-        ingredients: ingredients.slice(ingLimit),
-        instructions: instructions.slice(stepLimit),
-      },
-      strategy: needsBack ? 'continue' : 'single',
-    }
-  }
-
-  // Stacked landscape: classic double-sided card
-  if (layout === 'stacked') {
-    const ingLimit = size === '4x6' ? 8 : 12
-    const frontIng = ingredients.slice(0, ingLimit)
-    const backIng = ingredients.slice(ingLimit)
-    const needsBack = instructions.length > 0 || backIng.length > 0
-
-    return {
-      needsBack,
-      front: {
-        ingredients: frontIng,
-        instructions: [],
-        note: needsBack ? 'Directions on back →' : null,
-      },
-      back: {
-        ingredients: backIng,
-        instructions,
-      },
-      strategy: 'ingredients-front',
-    }
-  }
-
-  // Two-column: share the front, continue leftovers on back
-  const ingLimit = size === '4x6' ? 7 : 11
-  const stepLimit = size === '4x6' ? 5 : 8
-  const frontIng = ingredients.slice(0, ingLimit)
-  const frontSteps = instructions.slice(0, stepLimit)
-  const backIng = ingredients.slice(ingLimit)
-  const backSteps = instructions.slice(stepLimit)
-  const needsBack = backIng.length > 0 || backSteps.length > 0
+  const pages = packStreamPages(ingredients, instructions, {
+    ingCap: strategy === 'split' ? limits.splitIng : limits.stackedIng,
+    stepCap: strategy === 'split' ? limits.splitStep : limits.stackedStep,
+  })
 
   return {
-    needsBack,
-    front: {
-      ingredients: frontIng,
-      instructions: frontSteps,
-      note:
-        needsBack && backSteps.length > 0
-          ? '…continued on back'
-          : needsBack
-            ? '…more on back'
-            : null,
-    },
-    back: {
-      ingredients: backIng,
-      instructions: backSteps,
-    },
-    strategy: 'continue',
+    pages: annotatePageNotes(
+      trimEmptyPages(pages.length ? pages : [{ ingredients: [], instructions: [] }])
+    ),
+    strategy,
   }
+}
+
+/**
+ * Move one trailing item from an overflowing page onto the next page.
+ * Returns a new plan, or the same plan if nothing moved.
+ */
+export function spillOneOverflowItem(plan, pageIndex, { preferColumn } = {}) {
+  const pages = trimEmptyPages(plan.pages)
+  if (pageIndex < 0 || pageIndex >= pages.length) return plan
+  if (pages.length >= MAX_CARD_PAGES && pageIndex === pages.length - 1) return plan
+
+  const page = {
+    ingredients: [...(pages[pageIndex].ingredients || [])],
+    instructions: [...(pages[pageIndex].instructions || [])],
+  }
+
+  let movedIng = null
+  let movedStep = null
+
+  const spillIng = () => {
+    if (page.ingredients.length === 0) return false
+    movedIng = page.ingredients.pop()
+    return true
+  }
+  const spillStep = () => {
+    if (page.instructions.length === 0) return false
+    movedStep = page.instructions.pop()
+    return true
+  }
+
+  if (preferColumn === 'ingredients') {
+    if (!spillIng() && !spillStep()) return plan
+  } else if (preferColumn === 'instructions') {
+    if (!spillStep() && !spillIng()) return plan
+  } else {
+    // Stream layouts (stacked + newspaper split): spill from end — steps then ings
+    if (page.instructions.length > 0) {
+      if (!spillStep()) return plan
+    } else if (!spillIng()) {
+      return plan
+    }
+  }
+
+  const nextPages = pages.map((p, i) =>
+    i === pageIndex
+      ? page
+      : {
+          ingredients: [...(p.ingredients || [])],
+          instructions: [...(p.instructions || [])],
+        }
+  )
+
+  if (!nextPages[pageIndex + 1]) {
+    if (nextPages.length >= MAX_CARD_PAGES) {
+      // Put item back — cannot create another page
+      if (movedStep) page.instructions.push(movedStep)
+      if (movedIng) page.ingredients.push(movedIng)
+      return plan
+    }
+    nextPages.push({ ingredients: [], instructions: [] })
+  }
+
+  if (movedStep) nextPages[pageIndex + 1].instructions.unshift(movedStep)
+  if (movedIng) nextPages[pageIndex + 1].ingredients.unshift(movedIng)
+
+  return {
+    strategy: plan.strategy,
+    pages: annotatePageNotes(trimEmptyPages(nextPages)),
+  }
+}
+
+/** Detect whether a rendered card face is clipping content. */
+export function detectCardOverflow(cardEl) {
+  if (!cardEl) return null
+  const card = cardEl.matches?.('.recipe-index-card')
+    ? cardEl
+    : cardEl.querySelector('.recipe-index-card')
+  if (!card) return null
+
+  const frame = card.querySelector('.recipe-index-card__frame')
+  const body = frame?.querySelector('.recipe-index-card__body')
+  if (!frame || !body) return null
+
+  const bodyH = body.clientHeight
+  if (bodyH < 16) {
+    return { notReady: true, frameOverflow: true, bodyOverflow: true, preferColumn: null }
+  }
+
+  // Geometry check (works under CSS transform:scale on the preview).
+  // If any list item extends past the body box, content is clipped.
+  const bodyRect = body.getBoundingClientRect()
+  if (bodyRect.height < 8) {
+    return { notReady: true, frameOverflow: true, bodyOverflow: true, preferColumn: null }
+  }
+
+  const slack = 3
+  const items = body.querySelectorAll('li')
+  for (const el of items) {
+    const r = el.getBoundingClientRect()
+    if (r.height < 1) continue
+    if (r.bottom > bodyRect.bottom + slack) {
+      return {
+        frameOverflow: true,
+        bodyOverflow: true,
+        preferColumn: null,
+      }
+    }
+  }
+
+  // Also catch section headings / leftover content with no list items yet
+  const blocks = body.querySelectorAll('.recipe-index-card__block')
+  for (const el of blocks) {
+    const r = el.getBoundingClientRect()
+    if (r.height < 1) continue
+    if (r.bottom > bodyRect.bottom + slack) {
+      return {
+        frameOverflow: true,
+        bodyOverflow: true,
+        preferColumn: null,
+      }
+    }
+  }
+
+  return null
 }
 
 export default function RecipeCardPrint({
@@ -187,7 +357,7 @@ export default function RecipeCardPrint({
   size = '4x6',
   style = 'lined',
   layout = 'split',
-  side = 'front',
+  pageIndex = 0,
   className = '',
   plan: planProp,
 }) {
@@ -199,13 +369,19 @@ export default function RecipeCardPrint({
     [planProp, recipe, size, layout]
   )
 
-  const showingBack = side === 'back' && plan.needsBack
-  const page = showingBack ? plan.back : plan.front
+  const totalPages = plan.pages?.length || 1
+  const safeIndex = Math.min(Math.max(0, pageIndex), totalPages - 1)
+  const page = plan.pages[safeIndex] || { ingredients: [], instructions: [] }
   const shownIngredients = page.ingredients || []
   const shownInstructions = page.instructions || []
-  const continueNote = !showingBack ? page.note : null
+  const isContinuation = safeIndex > 0
 
-  const frontStepCount = plan.front.instructions?.length || 0
+  const stepOffset = (plan.pages || [])
+    .slice(0, safeIndex)
+    .reduce((n, p) => n + (p.instructions?.length || 0), 0)
+
+  const bodyLayout =
+    plan.strategy === 'stacked' || layout === 'stacked' ? 'stacked' : 'split'
 
   const metaBits = [
     recipe.servings ? `Serves: ${recipe.servings}` : null,
@@ -214,6 +390,12 @@ export default function RecipeCardPrint({
   ].filter(Boolean)
 
   const title = (recipe.title || 'Untitled recipe').toUpperCase()
+  const footerTag = getPageFooterTag(safeIndex, totalPages)
+
+  const ingHeading =
+    isContinuation && shownInstructions.length > 0 && shownIngredients.length > 0
+      ? 'More ingredients'
+      : 'Ingredients'
 
   return (
     <article
@@ -221,48 +403,43 @@ export default function RecipeCardPrint({
         'recipe-index-card',
         STYLE_CLASS[style] || STYLE_CLASS.lined,
         SIZE_CLASS[size] || SIZE_CLASS['4x6'],
-        LAYOUT_CLASS[layout] || LAYOUT_CLASS.split,
-        showingBack ? 'recipe-index-card--back' : 'recipe-index-card--front',
+        LAYOUT_CLASS[bodyLayout] || LAYOUT_CLASS.split,
+        isContinuation ? 'recipe-index-card--back' : 'recipe-index-card--front',
         className,
       ].join(' ')}
       style={{ width: dims.width, height: dims.height }}
+      data-page-index={safeIndex}
     >
       <div className="recipe-index-card__frame">
         <header className="recipe-index-card__header">
-          <p className="recipe-index-card__wordmark">
-            {showingBack ? 'Back' : 'Recipe'}
-          </p>
+          <p className="recipe-index-card__wordmark">Recipe</p>
           <div className="recipe-index-card__heading">
             <h1 className="recipe-index-card__title">{title}</h1>
-            {!showingBack && metaBits.length > 0 && (
+            {metaBits.length > 0 && (
               <p className="recipe-index-card__meta">
                 {metaBits.map((bit, i) => (
                   <span key={bit}>
-                    {i > 0 && <span className="recipe-index-card__meta-sep" aria-hidden>|</span>}
+                    {i > 0 && (
+                      <span className="recipe-index-card__meta-sep" aria-hidden>
+                        |
+                      </span>
+                    )}
                     {bit}
                   </span>
                 ))}
               </p>
-            )}
-            {showingBack && (
-              <p className="recipe-index-card__meta">Continued from front</p>
             )}
           </div>
         </header>
 
         <div
           className={`recipe-index-card__body ${
-            // Back of a stacked card is usually directions-only — still use stacked
-            BODY_LAYOUT_CLASS[
-              showingBack && plan.strategy === 'ingredients-front'
-                ? 'stacked'
-                : layout
-            ] || BODY_LAYOUT_CLASS.split
+            BODY_LAYOUT_CLASS[bodyLayout] || BODY_LAYOUT_CLASS.split
           }`}
         >
           {shownIngredients.length > 0 && (
             <section className="recipe-index-card__block recipe-index-card__block--ingredients">
-              <h2>{showingBack && shownInstructions.length ? 'More ingredients' : 'Ingredients'}</h2>
+              <h2>{ingHeading}</h2>
               <ul>
                 {shownIngredients.map((ing, idx) => {
                   const amount = formatAmount(ing)
@@ -271,7 +448,9 @@ export default function RecipeCardPrint({
                       key={idx}
                       className={amount ? undefined : 'recipe-index-card__ing--full'}
                     >
-                      {amount ? <span className="recipe-index-card__amt">{amount}</span> : null}
+                      {amount ? (
+                        <span className="recipe-index-card__amt">{amount}</span>
+                      ) : null}
                       <span className="recipe-index-card__iname">{ing.name}</span>
                     </li>
                   )
@@ -285,7 +464,7 @@ export default function RecipeCardPrint({
               <h2>Directions</h2>
               <ol>
                 {shownInstructions.map((inst, idx) => {
-                  const n = showingBack ? frontStepCount + idx + 1 : idx + 1
+                  const n = stepOffset + idx + 1
                   return (
                     <li key={idx}>
                       <span className="recipe-index-card__num">{n}</span>
@@ -296,12 +475,6 @@ export default function RecipeCardPrint({
               </ol>
             </section>
           )}
-
-          {continueNote && (
-            <p className="recipe-index-card__cont recipe-index-card__cont--banner">
-              {continueNote}
-            </p>
-          )}
         </div>
 
         <footer className="recipe-index-card__footer">
@@ -310,10 +483,8 @@ export default function RecipeCardPrint({
               ? `From the kitchen · ${source}`
               : 'From the kitchen · Index Card Kitchen'}
           </span>
-          {plan.needsBack && (
-            <span className="recipe-index-card__side-tag">
-              {showingBack ? 'Side 2 of 2' : 'Side 1 of 2'}
-            </span>
+          {footerTag && (
+            <span className="recipe-index-card__side-tag">{footerTag}</span>
           )}
         </footer>
       </div>

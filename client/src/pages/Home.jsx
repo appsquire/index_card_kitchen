@@ -177,7 +177,7 @@ export default function Home() {
                 <article className="recipe-box-card__face recipe-box-card__face--add">
                   <Plus className="w-8 h-8 text-gingham mb-2" />
                   <p className="font-hand text-2xl text-wicker-800 leading-none">Add a card</p>
-                  <p className="text-sm text-wicker-500 mt-2">Handwritten or from a link</p>
+                  <p className="text-sm text-wicker-600 mt-2">Handwritten or from a link</p>
                 </article>
               </Link>
             </div>

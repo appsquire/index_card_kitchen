@@ -108,7 +108,7 @@ export default function RecipeDetail() {
                 <div className="flex items-center gap-2">
                   <Clock className="w-5 h-5" />
                   <div>
-                    <div className="text-sm text-wicker-500">Prep</div>
+                    <div className="text-sm text-wicker-600">Prep</div>
                     <div className="font-semibold">{recipe.prepTime} min</div>
                   </div>
                 </div>
@@ -117,7 +117,7 @@ export default function RecipeDetail() {
                 <div className="flex items-center gap-2">
                   <Clock className="w-5 h-5" />
                   <div>
-                    <div className="text-sm text-wicker-500">Cook</div>
+                    <div className="text-sm text-wicker-600">Cook</div>
                     <div className="font-semibold">{recipe.cookTime} min</div>
                   </div>
                 </div>
@@ -126,7 +126,7 @@ export default function RecipeDetail() {
                 <div className="flex items-center gap-2">
                   <Clock className="w-5 h-5" />
                   <div>
-                    <div className="text-sm text-wicker-500">Total</div>
+                    <div className="text-sm text-wicker-600">Total</div>
                     <div className="font-semibold">{totalTime} min</div>
                   </div>
                 </div>
@@ -135,7 +135,7 @@ export default function RecipeDetail() {
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5" />
                   <div>
-                    <div className="text-sm text-wicker-500">Servings</div>
+                    <div className="text-sm text-wicker-600">Servings</div>
                     <div className="font-semibold">{recipe.servings}</div>
                   </div>
                 </div>
@@ -190,15 +190,37 @@ export default function RecipeDetail() {
 
         <div className="lg:col-span-1">
           <div className="card sticky top-24 space-y-4">
-            <h3 className="font-hand text-2xl text-wicker-900">Actions</h3>
-
+            {/* Mini card preview */}
             <button
               onClick={() => setShowCardStudio(true)}
-              className="btn-primary w-full flex items-center justify-center gap-2"
+              className="group w-full cursor-pointer"
+              aria-label="Make a recipe card"
             >
-              <Printer className="w-4 h-4" />
-              Make a recipe card
+              <div
+                className="relative overflow-hidden rounded-lg shadow-sm group-hover:shadow-md transition-all"
+                style={{
+                  aspectRatio: '6 / 4',
+                  backgroundImage: 'url(/recipe-card-bg.png)',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }}
+              >
+                <div className="absolute inset-0 flex items-center justify-center p-4">
+                  <div className="bg-white/80 backdrop-blur-sm rounded px-3 py-2 text-center">
+                    <p className="text-[10px] text-gingham uppercase tracking-wide font-semibold">Recipe Card</p>
+                    <p className="text-sm font-hand text-wicker-800 leading-tight line-clamp-2">
+                      {recipe.title}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <p className="mt-2 text-sm text-wicker-600 group-hover:text-gingham transition-colors text-center flex items-center justify-center gap-1">
+                <Printer className="w-4 h-4" />
+                Click to customize & print
+              </p>
             </button>
+
+            <hr className="border-wicker-200" />
 
             <Link
               to={`/recipe/${id}/edit`}

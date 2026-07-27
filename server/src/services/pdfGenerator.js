@@ -6,6 +6,8 @@ const SIZES = {
   letter: { width: '8.5in', height: '11in', pageWidth: '8.5in', pageHeight: '11in' },
 }
 
+const MAX_CARD_PAGES = 8
+
 const FRACTIONS = [
   [1 / 8, '⅛'],
   [1 / 6, '⅙'],
@@ -54,59 +56,114 @@ function formatQuantity(value) {
   return `${sign}${rounded}`
 }
 
+function pageLimits(size) {
+  if (size === 'letter') {
+    return { stackedIng: 18, stackedStep: 10, splitIng: 28, splitStep: 14 }
+  }
+  if (size === '5x7') {
+    return { stackedIng: 8, stackedStep: 5, splitIng: 12, splitStep: 6 }
+  }
+  return { stackedIng: 5, stackedStep: 3, splitIng: 8, splitStep: 3 }
+}
+
+function getPageFooterTag(pageIndex, totalPages) {
+  if (totalPages <= 1) return null
+  if (totalPages === 2) return `Side ${pageIndex + 1} of 2`
+  return `Page ${pageIndex + 1} of ${totalPages}`
+}
+
+function annotatePageNotes(pages) {
+  return pages.map((page) => ({ ...page, note: null }))
+}
+
+function trimEmptyPages(pages) {
+  const mapped = pages.map((p) => ({
+    ingredients: [...(p.ingredients || [])],
+    instructions: [...(p.instructions || [])],
+    note: null,
+  }))
+  const nonempty = mapped.filter(
+    (p) => p.ingredients.length > 0 || p.instructions.length > 0
+  )
+  return nonempty.length > 0
+    ? nonempty
+    : [{ ingredients: [], instructions: [], note: null }]
+}
+
+function facesPerLetterSheet(size) {
+  if (size === '4x6' || size === '5x7') return 2
+  return 1
+}
+
+function packPageIndexes(pageCount, size) {
+  const per = facesPerLetterSheet(size)
+  const sheets = []
+  for (let i = 0; i < pageCount; i += per) {
+    const faceIndexes = []
+    for (let j = i; j < Math.min(i + per, pageCount); j++) faceIndexes.push(j)
+    sheets.push(faceIndexes)
+  }
+  return sheets
+}
+
+/**
+ * Pack ingredients then directions onto pages (stream order).
+ * Directions only start after all ingredients are placed.
+ */
+function packStreamPages(ingredients, instructions, { ingCap, stepCap }) {
+  const pages = []
+  let ingRemaining = [...ingredients]
+  let stepRemaining = [...instructions]
+
+  if (ingRemaining.length === 0 && stepRemaining.length === 0) {
+    return [{ ingredients: [], instructions: [] }]
+  }
+
+  while (
+    (ingRemaining.length > 0 || stepRemaining.length > 0) &&
+    pages.length < MAX_CARD_PAGES
+  ) {
+    const pageIng = ingRemaining.splice(0, ingCap)
+    let pageSteps = []
+    if (ingRemaining.length === 0) {
+      pageSteps = stepRemaining.splice(0, stepCap)
+    }
+    if (pageIng.length === 0 && pageSteps.length === 0) break
+    pages.push({ ingredients: pageIng, instructions: pageSteps })
+  }
+
+  if (ingRemaining.length || stepRemaining.length) {
+    if (pages.length === 0) {
+      pages.push({ ingredients: [], instructions: [] })
+    }
+    const last = pages[pages.length - 1]
+    last.ingredients.push(...ingRemaining)
+    last.instructions.push(...stepRemaining)
+  }
+
+  return pages
+}
+
+/**
+ * Heuristic multi-page plan (server has no DOM measure).
+ * Uses generous caps so pages stay denser; footer tag alone marks multi-page.
+ */
 function planRecipeCard(recipe, { size = '4x6', layout = 'split' } = {}) {
   const ingredients = (recipe.ingredients || []).filter((i) => i?.name?.trim())
   const instructions = (recipe.instructions || []).filter((i) => i?.step?.trim())
+  const strategy = layout === 'stacked' ? 'stacked' : 'split'
+  const limits = pageLimits(size)
 
-  if (size === 'letter') {
-    const ingLimit = 28
-    const stepLimit = 20
-    const needsBack = ingredients.length > ingLimit || instructions.length > stepLimit
-    return {
-      needsBack,
-      strategy: needsBack ? 'continue' : 'single',
-      front: {
-        ingredients: ingredients.slice(0, ingLimit),
-        instructions: instructions.slice(0, stepLimit),
-      },
-      back: {
-        ingredients: ingredients.slice(ingLimit),
-        instructions: instructions.slice(stepLimit),
-      },
-    }
-  }
+  const pages = packStreamPages(ingredients, instructions, {
+    ingCap: strategy === 'split' ? limits.splitIng : limits.stackedIng,
+    stepCap: strategy === 'split' ? limits.splitStep : limits.stackedStep,
+  })
 
-  if (layout === 'stacked') {
-    const ingLimit = size === '4x6' ? 8 : 12
-    const frontIng = ingredients.slice(0, ingLimit)
-    const backIng = ingredients.slice(ingLimit)
-    const needsBack = instructions.length > 0 || backIng.length > 0
-    return {
-      needsBack,
-      strategy: 'ingredients-front',
-      front: {
-        ingredients: frontIng,
-        instructions: [],
-        note: needsBack ? 'Directions on back →' : null,
-      },
-      back: { ingredients: backIng, instructions },
-    }
-  }
-
-  const ingLimit = size === '4x6' ? 7 : 11
-  const stepLimit = size === '4x6' ? 5 : 8
-  const backIng = ingredients.slice(ingLimit)
-  const backSteps = instructions.slice(stepLimit)
-  const needsBack = backIng.length > 0 || backSteps.length > 0
   return {
-    needsBack,
-    strategy: 'continue',
-    front: {
-      ingredients: ingredients.slice(0, ingLimit),
-      instructions: instructions.slice(0, stepLimit),
-      note: needsBack ? (backSteps.length ? '…continued on back' : '…more on back') : null,
-    },
-    back: { ingredients: backIng, instructions: backSteps },
+    pages: annotatePageNotes(
+      trimEmptyPages(pages.length ? pages : [{ ingredients: [], instructions: [] }])
+    ),
+    strategy,
   }
 }
 
@@ -116,8 +173,16 @@ export async function generateRecipePdf(recipe, options = {}) {
   const layout = options.layout === 'stacked' ? 'stacked' : 'split'
   const dims = SIZES[size]
   const plan = planRecipeCard(recipe, { size, layout })
+  const packOntoLetter = size === '4x6' || size === '5x7'
 
-  const html = generateRecipeHtml(recipe, { size, style, layout, dims, plan })
+  const html = generateRecipeHtml(recipe, {
+    size,
+    style,
+    layout,
+    dims,
+    plan,
+    packOntoLetter,
+  })
 
   const browser = await launchBrowser()
 
@@ -129,13 +194,23 @@ export async function generateRecipePdf(recipe, options = {}) {
       new Promise((r) => setTimeout(r, 1500)),
     ]).catch(() => {})
 
-    const pdfBuffer = await page.pdf({
-      width: dims.pageWidth,
-      height: dims.pageHeight,
-      margin: { top: '0', right: '0', bottom: '0', left: '0' },
-      printBackground: true,
-      preferCSSPageSize: false,
-    })
+    const pdfBuffer = await page.pdf(
+      packOntoLetter
+        ? {
+            width: '8.5in',
+            height: '11in',
+            margin: { top: '0.4in', right: '0.4in', bottom: '0.4in', left: '0.4in' },
+            printBackground: true,
+            preferCSSPageSize: false,
+          }
+        : {
+            width: dims.pageWidth,
+            height: dims.pageHeight,
+            margin: { top: '0', right: '0', bottom: '0', left: '0' },
+            printBackground: true,
+            preferCSSPageSize: false,
+          }
+    )
 
     return Buffer.from(pdfBuffer)
   } finally {
@@ -148,15 +223,18 @@ function formatMinutes(n) {
   return n >= 60 ? `${Math.floor(n / 60)}H${n % 60 ? ` ${n % 60}M` : ''}` : `${n}M`
 }
 
-function renderCardPage(recipe, { size, style, layout, dims, plan, side }) {
-  const showingBack = side === 'back'
-  const page = showingBack ? plan.back : plan.front
+function renderCardPage(recipe, { size, style, layout, dims, plan, pageIndex }) {
+  const totalPages = plan.pages?.length || 1
+  const safeIndex = Math.min(Math.max(0, pageIndex), totalPages - 1)
+  const page = plan.pages[safeIndex] || { ingredients: [], instructions: [] }
   const ingredients = page.ingredients || []
   const instructions = page.instructions || []
-  const continueNote = !showingBack ? page.note : null
-  const frontStepCount = plan.front.instructions?.length || 0
-  const bodyLayout =
-    showingBack && plan.strategy === 'ingredients-front' ? 'stacked' : layout
+  const isContinuation = safeIndex > 0
+  const stepOffset = (plan.pages || [])
+    .slice(0, safeIndex)
+    .reduce((n, p) => n + (p.instructions?.length || 0), 0)
+
+  const bodyLayout = plan.strategy === 'stacked' || layout === 'stacked' ? 'stacked' : 'split'
 
   let source = ''
   try {
@@ -186,7 +264,7 @@ function renderCardPage(recipe, { size, style, layout, dims, plan, side }) {
 
   const instructionsHtml = instructions
     .map((inst, idx) => {
-      const n = showingBack ? frontStepCount + idx + 1 : idx + 1
+      const n = stepOffset + idx + 1
       return `<li><span class="num">${n}</span><span class="step">${escapeHtml(inst.step)}</span></li>`
     })
     .join('')
@@ -195,38 +273,39 @@ function renderCardPage(recipe, { size, style, layout, dims, plan, side }) {
   const footerLeft = source
     ? `From the kitchen · ${source}`
     : 'From the kitchen · Index Card Kitchen'
-  const sideTag = plan.needsBack ? (showingBack ? 'Side 2 of 2' : 'Side 1 of 2') : ''
+  const sideTag = getPageFooterTag(safeIndex, totalPages)
 
   const isLetter = size === 'letter'
   const wordSize = isLetter ? '64px' : size === '5x7' ? '48px' : '42px'
   const titleSize = isLetter ? '20px' : size === '5x7' ? '15px' : '13px'
   const bodySize = isLetter ? '13px' : '10.5px'
+  const amtCol = isLetter ? '1.15in' : size === '5x7' ? '1.05in' : '0.95in'
+  const headerMb = isLetter ? '0.26in' : '0.18in'
+
+  const ingHeading =
+    isContinuation && instructions.length > 0 && ingredients.length > 0
+      ? 'More ingredients'
+      : 'Ingredients'
+
+  const metaBlock = metaHtml ? `<div class="meta">${metaHtml}</div>` : ''
 
   return `
   <div class="card ${style}" style="width:${dims.width};height:${dims.height}">
-    <div class="header">
+    <div class="header" style="margin-bottom:${headerMb}">
       <div class="wordmark" style="font-size:${wordSize};color:${style === 'enamel' ? '#c23b3b' : '#111'}">
-        ${showingBack ? 'Back' : 'Recipe'}
+        Recipe
       </div>
       <div class="heading">
         <h1 style="font-size:${titleSize}">${escapeHtml(title)}</h1>
-        ${
-          showingBack
-            ? '<div class="meta">Continued from front</div>'
-            : metaHtml
-              ? `<div class="meta">${metaHtml}</div>`
-              : ''
-        }
+        ${metaBlock}
       </div>
     </div>
     <div class="body ${bodyLayout}" style="font-size:${bodySize}">
       ${
         ingredients.length
           ? `<section>
-              <h2 style="color:${style === 'enamel' ? '#c23b3b' : '#111'}">${
-                showingBack && instructions.length ? 'More ingredients' : 'Ingredients'
-              }</h2>
-              <ul class="ings">${ingredientsHtml}</ul>
+              <h2 style="color:${style === 'enamel' ? '#c23b3b' : '#111'}">${escapeHtml(ingHeading)}</h2>
+              <ul class="ings" style="--amt-col:${amtCol}">${ingredientsHtml}</ul>
             </section>`
           : ''
       }
@@ -238,7 +317,6 @@ function renderCardPage(recipe, { size, style, layout, dims, plan, side }) {
             </section>`
           : ''
       }
-      ${continueNote ? `<p class="cont">${escapeHtml(continueNote)}</p>` : ''}
     </div>
     <div class="footer">
       <span>${escapeHtml(footerLeft)}</span>
@@ -247,11 +325,24 @@ function renderCardPage(recipe, { size, style, layout, dims, plan, side }) {
   </div>`
 }
 
-function generateRecipeHtml(recipe, { size, style, layout, dims, plan }) {
-  const pages = [renderCardPage(recipe, { size, style, layout, dims, plan, side: 'front' })]
-  if (plan.needsBack) {
-    pages.push(renderCardPage(recipe, { size, style, layout, dims, plan, side: 'back' }))
-  }
+function generateRecipeHtml(recipe, { size, style, layout, dims, plan, packOntoLetter = false }) {
+  const totalPages = plan.pages?.length || 1
+  const sheets = packOntoLetter
+    ? packPageIndexes(totalPages, size)
+    : [[...Array(totalPages).keys()]]
+
+  const sheetHtml = sheets
+    .map((faceIndexes, sheetIdx) => {
+      const faces = faceIndexes
+        .map((i) =>
+          renderCardPage(recipe, { size, style, layout, dims, plan, pageIndex: i })
+        )
+        .join('\n')
+      const breakClass = sheetIdx > 0 ? ' sheet--break' : ''
+      const cutClass = packOntoLetter ? ' sheet--cut' : ''
+      return `<div class="sheet${cutClass}${breakClass}">${faces}</div>`
+    })
+    .join('\n')
 
   return `<!DOCTYPE html>
 <html>
@@ -263,16 +354,29 @@ function generateRecipeHtml(recipe, { size, style, layout, dims, plan }) {
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Nunito', 'Segoe UI', Tahoma, sans-serif; color: #1a1a1a; }
+    .sheet {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.15in;
+    }
+    .sheet--break {
+      break-before: page;
+      page-break-before: always;
+    }
     .card {
       padding: 0.28in 0.32in 0.22in;
       overflow: hidden;
       background: #fff;
       display: flex;
       flex-direction: column;
-      page-break-after: always;
-      break-after: page;
+      flex-shrink: 0;
+      border: none;
     }
-    .card:last-child { page-break-after: auto; break-after: auto; }
+    /* Dashed cut guides only when packing index cards onto letter sheets */
+    .sheet--cut .card {
+      border: 2px dashed #999;
+    }
     .card.butter { background: #f6e6b4; }
     .card.lined .iname, .card.lined .step {
       border-bottom: 1px solid #d7e4f2;
@@ -282,11 +386,12 @@ function generateRecipeHtml(recipe, { size, style, layout, dims, plan }) {
       border-bottom: 1px solid rgba(120, 90, 40, 0.22);
       padding-bottom: 2px;
     }
-    .header { display: flex; gap: 0.18in; align-items: flex-start; margin-bottom: 0.14in; }
+    .header { display: flex; gap: 0.18in; align-items: flex-start; margin-bottom: 0.18in; }
     .wordmark {
       font-family: 'Patrick Hand', 'Segoe Print', 'Comic Sans MS', cursive;
-      line-height: 0.85;
+      line-height: 1.05;
       flex-shrink: 0;
+      padding-bottom: 0.06in;
     }
     .heading { flex: 1; padding-top: 0.08in; }
     h1 {
@@ -303,8 +408,23 @@ function generateRecipeHtml(recipe, { size, style, layout, dims, plan }) {
       color: #444;
     }
     .sep { margin: 0 0.28em; color: #999; font-weight: 500; }
-    .body.split { display: grid; grid-template-columns: 0.92fr 1.08fr; gap: 0.22in; flex: 1; min-height: 0; }
-    .body.stacked { display: flex; flex-direction: column; gap: 0.16in; flex: 1; min-height: 0; }
+    .body.split {
+      column-count: 2;
+      column-gap: 0.22in;
+      column-fill: auto;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      height: 100%;
+    }
+    .body.split > section + section { margin-top: 0.14in; }
+    .body.split h2 { break-after: avoid; -webkit-column-break-after: avoid; }
+    .body.split li {
+      break-inside: avoid;
+      -webkit-column-break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .body.stacked { display: flex; flex-direction: column; gap: 0.16in; flex: 1; min-height: 0; overflow: hidden; }
     h2 {
       font-family: 'Patrick Hand', 'Segoe Print', 'Comic Sans MS', cursive;
       font-size: 22px;
@@ -314,14 +434,14 @@ function generateRecipeHtml(recipe, { size, style, layout, dims, plan }) {
     ul, ol { list-style: none; }
     .ings li {
       display: grid;
-      grid-template-columns: 0.72in 1fr;
+      grid-template-columns: var(--amt-col, 0.95in) 1fr;
       gap: 0.08in;
       align-items: end;
       margin-bottom: 5px;
       line-height: 1.25;
     }
     .ings li.full { grid-template-columns: 1fr; }
-    .amt { font-weight: 700; font-size: 10px; }
+    .amt { font-weight: 700; font-size: 10px; white-space: nowrap; }
     .dirs li {
       display: grid;
       grid-template-columns: 0.18in 1fr;
@@ -331,13 +451,14 @@ function generateRecipeHtml(recipe, { size, style, layout, dims, plan }) {
     }
     .num { font-weight: 800; font-size: 10px; }
     .cont {
-      grid-column: 1 / -1;
-      margin-top: auto;
+      column-span: all;
+      margin-top: 6px;
       text-align: right;
       font-family: 'Patrick Hand', cursive;
       font-size: 13px;
       color: #c23b3b;
     }
+    .body.stacked .cont { margin-top: auto; }
     .footer {
       margin-top: auto;
       padding-top: 0.1in;
@@ -354,7 +475,7 @@ function generateRecipeHtml(recipe, { size, style, layout, dims, plan }) {
   </style>
 </head>
 <body>
-  ${pages.join('\n')}
+  ${sheetHtml}
 </body>
 </html>`
 }

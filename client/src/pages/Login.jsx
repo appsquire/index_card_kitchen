@@ -59,7 +59,7 @@ export default function Login() {
               Email
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-400" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-500" />
               <input
                 type="email"
                 id="email"
@@ -77,7 +77,7 @@ export default function Login() {
               Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-500" />
               <input
                 type="password"
                 id="password"
@@ -107,7 +107,7 @@ export default function Login() {
         </p>
       </div>
 
-      <p className="mt-6 text-center text-sm text-wicker-500">
+      <p className="mt-6 text-center text-sm text-wicker-600">
         You can also use Index Card Kitchen without an account.{' '}
         <Link to="/" className="text-gingham hover:underline">
           Continue without signing in

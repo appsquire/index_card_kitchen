@@ -21,7 +21,7 @@ export default function SearchBar({ onSearch, selectedCategory, onCategoryChange
     <div className="mb-6">
       <form onSubmit={handleSubmit} className="flex gap-2">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-500" />
           <input
             type="text"
             value={query}
@@ -33,7 +33,7 @@ export default function SearchBar({ onSearch, selectedCategory, onCategoryChange
             <button
               type="button"
               onClick={handleClear}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-wicker-400 hover:text-wicker-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-wicker-500 hover:text-wicker-600"
             >
               <X className="w-5 h-5" />
             </button>

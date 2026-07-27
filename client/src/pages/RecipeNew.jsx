@@ -153,7 +153,7 @@ export default function RecipeNew() {
         <div className="card mb-6">
           <form onSubmit={handleImport} className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 relative">
-              <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-400" />
+              <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-500" />
               <input
                 type="url"
                 value={url}
@@ -179,7 +179,7 @@ export default function RecipeNew() {
               )}
             </button>
           </form>
-          <p className="mt-3 text-sm text-wicker-500">
+          <p className="mt-3 text-sm text-wicker-600">
             Works with AllRecipes, Food Network, Serious Eats, and most sites that mark up recipes.
           </p>
         </div>

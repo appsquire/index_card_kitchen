@@ -35,13 +35,15 @@
   .btn-primary {
     @apply bg-gingham text-white px-4 py-2 rounded-md font-semibold
            shadow-paper hover:bg-gingham-dark transition-all duration-200
-           hover:-translate-y-0.5 active:translate-y-0;
+           hover:-translate-y-0.5 active:translate-y-0
+           focus:outline-none focus:ring-2 focus:ring-gingham focus:ring-offset-2;
   }
 
   .btn-secondary {
     @apply bg-enamel text-wicker-700 px-4 py-2 rounded-md font-semibold
            border-2 border-wicker-200 hover:border-wicker-400 hover:bg-butter-light
-           transition-colors duration-200 shadow-paper;
+           transition-colors duration-200 shadow-paper
+           focus:outline-none focus:ring-2 focus:ring-wicker-400 focus:ring-offset-2;
   }
 
   .card {
@@ -55,7 +57,7 @@
   .input {
     @apply w-full px-4 py-2.5 border-2 border-wicker-200 rounded-md bg-enamel
            focus:ring-2 focus:ring-gingham/30 focus:border-gingham
-           outline-none transition-all duration-200 placeholder:text-wicker-400;
+           outline-none transition-all duration-200 placeholder:text-wicker-500;
   }
 
   /* Classic school-supply index card */
@@ -162,18 +164,23 @@
   display: flex;
   align-items: flex-start;
   gap: 0.18in;
-  margin-bottom: 0.14in;
+  margin-bottom: 0.18in;
   flex-shrink: 0;
+}
+
+.recipe-index-card--letter .recipe-index-card__header {
+  margin-bottom: 0.26in;
 }
 
 .recipe-index-card__wordmark {
   font-family: 'Patrick Hand', cursive;
   font-size: 42px;
-  line-height: 0.85;
+  line-height: 1.05;
   color: #111;
   margin: 0;
   flex-shrink: 0;
   padding-top: 2px;
+  padding-bottom: 0.06in;
 }
 
 .recipe-index-card--5x7 .recipe-index-card__wordmark {
@@ -241,17 +248,33 @@
   gap: 0.16in;
 }
 
+/* Newspaper columns: fill column 1 top→bottom, then column 2.
+   (balance was splitting ingredients across columns early on tall
+   Full page cards and leaving empty space at the bottom.) */
 .recipe-index-card__body--split {
-  display: grid;
-  grid-template-columns: 0.92fr 1.08fr;
-  gap: 0.18in 0.22in;
-  align-items: start;
+  column-count: 2;
+  column-gap: 0.22in;
+  column-fill: auto;
   height: 100%;
 }
 
 .recipe-index-card--letter .recipe-index-card__body--split {
-  grid-template-columns: 1fr 1.15fr;
-  gap: 0.28in;
+  column-gap: 0.28in;
+}
+
+.recipe-index-card__body--split > .recipe-index-card__block + .recipe-index-card__block {
+  margin-top: 0.14in;
+}
+
+.recipe-index-card__body--split .recipe-index-card__block h2 {
+  break-after: avoid;
+  -webkit-column-break-after: avoid;
+}
+
+.recipe-index-card__body--split .recipe-index-card__block li {
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .recipe-index-card__block h2 {
@@ -276,13 +299,17 @@
 
 .recipe-index-card__block--ingredients li {
   display: grid;
-  grid-template-columns: 0.72in 1fr;
+  grid-template-columns: 0.95in 1fr;
   gap: 0.08in;
   align-items: end;
   margin-bottom: 5px;
   font-size: 10.5px;
   line-height: 1.25;
   color: #222;
+}
+
+.recipe-index-card--5x7 .recipe-index-card__block--ingredients li {
+  grid-template-columns: 1.05in 1fr;
 }
 
 .recipe-index-card__block--ingredients li.recipe-index-card__ing--full {
@@ -325,7 +352,7 @@
 }
 
 .recipe-index-card--letter .recipe-index-card__block--ingredients li {
-  grid-template-columns: 1in 1fr;
+  grid-template-columns: 1.15in 1fr;
 }
 
 .recipe-index-card__cont {
@@ -357,11 +384,15 @@
 }
 
 .recipe-index-card__cont--banner {
-  grid-column: 1 / -1;
-  margin-top: auto;
+  column-span: all;
+  margin-top: 6px;
   padding-top: 6px;
   font-size: 13px;
   text-align: right;
+}
+
+.recipe-index-card__body--stacked .recipe-index-card__cont--banner {
+  margin-top: auto;
 }
 
 /* —— Card studio (portaled fullscreen) —— */
@@ -620,8 +651,26 @@
   color: #fff;
 }
 
+/* Measure/print targets: in-viewport but invisible so layout/fonts work reliably */
 .card-studio__print-sheet {
-  display: none;
+  position: fixed;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
+  width: max-content;
+}
+
+.card-studio__print-pack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15in;
+}
+
+.card-studio__print-face {
+  flex-shrink: 0;
 }
 
 .card-studio__toast {
@@ -906,11 +955,25 @@
 }
 
 @media print {
+  /* Zero @page margin so full-page cards don't spill onto a blank sheet.
+     Cut-card packs add their own padding for centering. */
+  @page {
+    size: letter;
+    margin: 0;
+  }
+
   body {
     background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .no-print {
+    display: none !important;
+  }
+
+  /* Prefer display:none over visibility:hidden so empty chrome doesn't paginate */
+  body.printing-card > *:not(.card-studio) {
     display: none !important;
   }
 
@@ -919,6 +982,7 @@
     inset: auto !important;
     background: white !important;
     overflow: visible !important;
+    display: block !important;
   }
 
   body.printing-card .card-studio__chrome {
@@ -926,25 +990,85 @@
   }
 
   body.printing-card .card-studio__print-sheet {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    padding: 0 !important;
     display: block !important;
+    pointer-events: auto !important;
+    z-index: auto !important;
+    width: auto !important;
+    visibility: visible !important;
   }
 
-  body.printing-card .card-studio__print-sheet .recipe-index-card {
+  body.printing-card .card-studio__print-pack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.15in;
+  }
+
+  /* 4×6 / 5×7: room to center cut-out cards on the letter sheet */
+  body.printing-card .card-studio__print-sheet--cut .card-studio__print-pack {
+    padding: 0.4in 0;
+    min-height: 11in;
+    box-sizing: border-box;
+  }
+
+  body.printing-card .card-studio__print-pack--break {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  body.printing-card .card-studio__print-face .recipe-index-card {
     box-shadow: none !important;
     break-inside: avoid;
     page-break-inside: avoid;
+    margin: 0;
+    border: none !important;
   }
 
-  body.printing-card .card-studio__print-page {
-    break-before: page;
-    page-break-before: always;
-    margin-top: 0;
+  /* Dashed cut guides only for index-card sizes — not Full page */
+  body.printing-card .card-studio__print-sheet--cut .recipe-index-card {
+    border: 2px dashed #999 !important;
+  }
+
+  /* Full page: exactly one letter sheet per face — no dashed border, no spill */
+  body.printing-card .card-studio__print-sheet--letter .card-studio__print-pack {
+    gap: 0;
+    width: 8.5in;
+    height: 11in;
+    overflow: hidden;
+    padding: 0;
+    min-height: 0;
+  }
+
+  body.printing-card .card-studio__print-sheet--letter .card-studio__print-face {
+    width: 8.5in;
+    height: 11in;
+    overflow: hidden;
+  }
+
+  body.printing-card .card-studio__print-sheet--letter .recipe-index-card {
+    width: 8.5in !important;
+    height: 11in !important;
+    max-width: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
   }
 
   .recipe-card,
   .recipe-index-card {
     break-inside: avoid;
     page-break-inside: avoid;
+  }
+
+  body.printing-card .card-studio__print-sheet--letter .recipe-index-card {
+    break-inside: auto;
+    page-break-inside: auto;
   }
 }
 
@@ -1321,4 +1445,23 @@
   background: #c23b3b;
   border-color: #c23b3b;
   color: #fff;
+}
+
+/* —— Reduced motion preference —— */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .recipe-box-card,
+  .card-hover,
+  .btn-primary,
+  .btn-secondary {
+    transform: none !important;
+  }
 }

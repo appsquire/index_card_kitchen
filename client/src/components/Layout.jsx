@@ -49,7 +49,7 @@ export default function Layout() {
 
             <div className="flex items-center gap-4">
               {syncing && (
-                <div className="flex items-center gap-1 text-sm text-wicker-500">
+                <div className="flex items-center gap-1 text-sm text-wicker-600">
                   <Cloud className="w-4 h-4 animate-pulse" />
                   Syncing...
                 </div>
@@ -104,11 +104,16 @@ export default function Layout() {
 
       {!isAuthenticated && (
         <div className="bg-butter-light/80 border-b border-butter-dark/30 px-4 py-2.5 text-center text-sm text-wicker-800">
-          Recipes stay on this computer for now.{' '}
+          <span className="hidden sm:inline">
+            Your recipes live in this browser only — clear your data and they're gone.{' '}
+          </span>
+          <span className="sm:hidden">
+            Recipes are stored locally only.{' '}
+          </span>
           <Link to="/register" className="text-gingham hover:underline font-bold">
-            Make an account
+            Create a free account
           </Link>{' '}
-          if you want them at the cottage too.
+          to keep them safe and access anywhere.
         </div>
       )}
 

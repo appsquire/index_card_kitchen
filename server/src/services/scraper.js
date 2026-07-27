@@ -135,7 +135,9 @@ function parseRecipeSchema(schema) {
   return {
     title: decodeEntities(schema.name || ''),
     description: decodeEntities(schema.description || ''),
-    imageUrl: extractImage(schema.image),
+    // imageUrl intentionally omitted - we use category placeholders instead
+    // to avoid hotlinking images from external sites (fair use concerns)
+    imageUrl: null,
     prepTime: parseDuration(schema.prepTime),
     cookTime: parseDuration(schema.cookTime),
     servings: parseServings(schema.recipeYield),
@@ -248,10 +250,8 @@ function extractFromMeta($, url) {
     $('meta[name="description"]').attr('content') ||
     ''
 
-  const imageUrl =
-    $('meta[property="og:image"]').attr('content') ||
-    $('meta[name="image"]').attr('content') ||
-    ''
+  // imageUrl intentionally not extracted - using category placeholders instead
+  const imageUrl = null
 
   const ingredients = []
   const instructions = []

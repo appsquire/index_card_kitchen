@@ -132,7 +132,7 @@ export default function RecipeForm({
 
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-wicker-700 mb-1">
-              Description <span className="text-wicker-400 font-normal">(optional)</span>
+              Description <span className="text-wicker-500 font-normal">(optional)</span>
             </label>
             <textarea
               id="description"
@@ -145,44 +145,26 @@ export default function RecipeForm({
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="sourceUrl" className="block text-sm font-medium text-wicker-700 mb-1">
-                Source URL <span className="text-wicker-400 font-normal">(optional)</span>
-              </label>
-              <input
-                type="url"
-                id="sourceUrl"
-                name="sourceUrl"
-                value={formData.sourceUrl}
-                onChange={handleChange}
-                className="input"
-                placeholder="https://..."
-              />
-              <p className="mt-1 text-xs text-wicker-500">Link to the original recipe for attribution</p>
-            </div>
-
-            <div>
-              <label htmlFor="imageUrl" className="block text-sm font-medium text-wicker-700 mb-1">
-                Image URL <span className="text-wicker-400 font-normal">(optional)</span>
-              </label>
-              <input
-                type="url"
-                id="imageUrl"
-                name="imageUrl"
-                value={formData.imageUrl}
-                onChange={handleChange}
-                className="input"
-                placeholder="https://..."
-              />
-              <p className="mt-1 text-xs text-wicker-500">Right-click an image online → Copy image address</p>
-            </div>
+          <div>
+            <label htmlFor="sourceUrl" className="block text-sm font-medium text-wicker-700 mb-1">
+              Source URL <span className="text-wicker-500 font-normal">(optional)</span>
+            </label>
+            <input
+              type="url"
+              id="sourceUrl"
+              name="sourceUrl"
+              value={formData.sourceUrl}
+              onChange={handleChange}
+              className="input"
+              placeholder="https://..."
+            />
+            <p className="mt-1 text-xs text-wicker-600">Link to the original recipe for attribution</p>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label htmlFor="prepTime" className="block text-sm font-medium text-wicker-700 mb-1">
-                Prep Time <span className="text-wicker-400 font-normal">(min)</span>
+                Prep Time <span className="text-wicker-500 font-normal">(min)</span>
               </label>
               <input
                 type="number"
@@ -197,7 +179,7 @@ export default function RecipeForm({
 
             <div>
               <label htmlFor="cookTime" className="block text-sm font-medium text-wicker-700 mb-1">
-                Cook Time <span className="text-wicker-400 font-normal">(min)</span>
+                Cook Time <span className="text-wicker-500 font-normal">(min)</span>
               </label>
               <input
                 type="number"
@@ -212,7 +194,7 @@ export default function RecipeForm({
 
             <div>
               <label htmlFor="servings" className="block text-sm font-medium text-wicker-700 mb-1">
-                Servings <span className="text-wicker-400 font-normal">(optional)</span>
+                Servings <span className="text-wicker-500 font-normal">(optional)</span>
               </label>
               <input
                 type="number"
@@ -262,7 +244,7 @@ export default function RecipeForm({
               <button
                 type="button"
                 onClick={() => removeIngredient(index)}
-                className="p-2 text-wicker-400 hover:text-red-600 transition-colors"
+                className="p-2 text-wicker-500 hover:text-red-600 transition-colors"
                 disabled={formData.ingredients.length === 1}
               >
                 <Trash2 className="w-5 h-5" />
@@ -303,7 +285,7 @@ export default function RecipeForm({
               <button
                 type="button"
                 onClick={() => removeInstruction(index)}
-                className="p-2 text-wicker-400 hover:text-red-600 transition-colors"
+                className="p-2 text-wicker-500 hover:text-red-600 transition-colors"
                 disabled={formData.instructions.length === 1}
               >
                 <Trash2 className="w-5 h-5" />

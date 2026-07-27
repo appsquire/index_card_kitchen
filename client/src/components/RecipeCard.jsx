@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Clock, Users } from 'lucide-react'
+import CategoryPlaceholder from './CategoryPlaceholder'
 
 function tiltFromId(id) {
   const s = String(id || 'x')
@@ -38,11 +39,7 @@ export default function RecipeCard({ recipe }) {
           {recipe.imageUrl ? (
             <img src={recipe.imageUrl} alt="" className="recipe-box-card__img" />
           ) : (
-            <div className="recipe-box-card__lines" aria-hidden>
-              <span />
-              <span />
-              <span />
-            </div>
+            <CategoryPlaceholder category={category} />
           )}
         </div>
 

@@ -85,7 +85,7 @@ export default function Register() {
               Name
             </label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-400" />
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-500" />
               <input
                 type="text"
                 id="name"
@@ -103,7 +103,7 @@ export default function Register() {
               Email
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-400" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-500" />
               <input
                 type="email"
                 id="email"
@@ -121,7 +121,7 @@ export default function Register() {
               Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-500" />
               <input
                 type="password"
                 id="password"
@@ -133,7 +133,7 @@ export default function Register() {
                 required
               />
             </div>
-            <p className="mt-1 text-xs text-wicker-500">At least 8 characters</p>
+            <p className="mt-1 text-xs text-wicker-600">At least 8 characters</p>
           </div>
 
           <div>
@@ -141,7 +141,7 @@ export default function Register() {
               Confirm Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-wicker-500" />
               <input
                 type="password"
                 id="confirmPassword"
@@ -171,7 +171,7 @@ export default function Register() {
         </p>
       </div>
 
-      <p className="mt-6 text-center text-sm text-wicker-500">
+      <p className="mt-6 text-center text-sm text-wicker-600">
         You can also use Index Card Kitchen without an account.{' '}
         <Link to="/" className="text-gingham hover:underline">
           Continue without signing up
