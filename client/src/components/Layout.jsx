@@ -123,55 +123,47 @@ export default function Layout() {
       </main>
 
       <footer className="site-footer mt-auto">
-        <div className="site-footer__kitchen">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-            <p className="text-center font-hand text-xl text-wicker-600 mb-3">
-              Index Card Kitchen — come hungry, leave with a card
-            </p>
-            <p className="text-center text-sm text-wicker-500">
-              <Link to="/terms" className="hover:text-gingham transition-colors">
-                Terms
-              </Link>
-              {' · '}
-              <Link to="/privacy" className="hover:text-gingham transition-colors">
-                Privacy
-              </Link>
-            </p>
-            <p className="text-center text-xs text-wicker-500/90 mt-2">
-              {copyrightNotice()}
-            </p>
-          </div>
-        </div>
+        <div className="site-footer__inner">
+          <p className="site-footer__tagline">
+            Index Card Kitchen — come hungry, leave with a card
+          </p>
 
-        <a
-          href="https://www.appsquire.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="site-footer__appsquire group"
-          aria-label="Built by AppSquire — visit appsquire.com"
-        >
-          <div className="site-footer__appsquire-inner">
+          <p className="site-footer__legal">
+            <Link to="/terms">Terms</Link>
+            <span aria-hidden> · </span>
+            <Link to="/privacy">Privacy</Link>
+          </p>
+
+          <div className="site-footer__rule" aria-hidden />
+
+          <a
+            href="https://www.appsquire.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="site-footer__credit group"
+            aria-label="Built by AppSquire — visit appsquire.com"
+          >
             <span className="site-footer__stamp" aria-hidden>
               Launch Lab
             </span>
             <span className="site-footer__logo-mark" aria-hidden>
               as
             </span>
-            <span className="site-footer__appsquire-text">
-              <span className="site-footer__appsquire-lead">Filed &amp; built by</span>
-              <span className="site-footer__appsquire-brand">
-                <span className="site-footer__appsquire-name">appsquire</span>
-                <span className="site-footer__appsquire-consulting">consulting</span>
+            <span className="site-footer__credit-text">
+              <span className="site-footer__credit-lead">Filed &amp; built by</span>
+              <span className="site-footer__credit-brand">
+                <span className="site-footer__credit-name">appsquire</span>
+                <span className="site-footer__credit-consulting">consulting</span>
               </span>
-              <span className="site-footer__appsquire-meta">
-                Edmonton, AB · Custom software
-              </span>
+              <span className="site-footer__credit-meta">Edmonton, AB · Custom software</span>
             </span>
-            <span className="site-footer__appsquire-arrow" aria-hidden>
+            <span className="site-footer__credit-arrow" aria-hidden>
               →
             </span>
-          </div>
-        </a>
+          </a>
+
+          <p className="site-footer__copyright">{copyrightNotice()}</p>
+        </div>
       </footer>
     </div>
   )
