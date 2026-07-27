@@ -61,6 +61,7 @@ function canUseDownloadAttr() {
 }
 
 async function captureCardElement(el) {
+  // Use same settings as PDF capture which renders correctly
   return html2canvas(el, {
     scale: 2,
     useCORS: true,
@@ -80,15 +81,9 @@ async function captureCardElement(el) {
   })
 }
 
-const STYLES = [
-  { id: 'lined', label: 'Ruled', hint: 'White card with writing lines' },
-  { id: 'butter', label: 'Manila', hint: 'Warm scrap-paper yellow' },
-  { id: 'enamel', label: 'Kitchen white', hint: 'Clean white, cherry script' },
-]
-
 export default function CardStudio({ recipe, onClose }) {
   const [size, setSize] = useState('4x6')
-  const [style, setStyle] = useState('enamel')
+  const style = 'enamel' // Single style - clean white with cherry script
   const [pageIndex, setPageIndex] = useState(0)
   const [exporting, setExporting] = useState(false)
   const [printSheetOpen, setPrintSheetOpen] = useState(false)
@@ -510,18 +505,6 @@ export default function CardStudio({ recipe, onClose }) {
               ))}
             </ControlGroup>
 
-            <ControlGroup label="Paper">
-              {STYLES.map((opt) => (
-                <OptionButton
-                  key={opt.id}
-                  active={style === opt.id}
-                  title={opt.label}
-                  hint={opt.hint}
-                  onClick={() => setStyle(opt.id)}
-                />
-              ))}
-            </ControlGroup>
-
             <div className="card-studio__actions">
               <button
                 type="button"
@@ -565,7 +548,6 @@ export default function CardStudio({ recipe, onClose }) {
                 type="button"
                 onClick={() => {
                   setSize('4x6')
-                  setStyle('enamel')
                   setPageIndex(0)
                 }}
                 className="w-full flex items-center justify-center gap-2 text-sm text-wicker-600 hover:text-wicker-800 py-2"
