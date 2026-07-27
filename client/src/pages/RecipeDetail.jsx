@@ -7,6 +7,9 @@ import {
   Edit,
   Trash2,
   ArrowLeft,
+  Smartphone,
+  Printer,
+  Type,
 } from 'lucide-react'
 import { useRecipes } from '../context/RecipeContext'
 import CardStudio from '../components/CardStudio'
@@ -16,6 +19,8 @@ export default function RecipeDetail() {
   const navigate = useNavigate()
   const { getRecipe, deleteRecipe, categories } = useRecipes()
   const [showCardStudio, setShowCardStudio] = useState(false)
+  const [cardStudioMode, setCardStudioMode] = useState('view')
+  const [largeText, setLargeText] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const recipe = getRecipe(id)
@@ -46,10 +51,23 @@ export default function RecipeDetail() {
     navigate('/')
   }
 
+  const openCardView = () => {
+    setCardStudioMode('view')
+    setShowCardStudio(true)
+  }
+
+  const openCardStudio = () => {
+    setCardStudioMode('studio')
+    setShowCardStudio(true)
+  }
+
   if (showCardStudio) {
     return (
       <CardStudio
         recipe={recipe}
+        variant={cardStudioMode}
+        largeText={largeText}
+        initialPhotoOpen={cardStudioMode === 'view'}
         onClose={() => setShowCardStudio(false)}
       />
     )
@@ -189,11 +207,10 @@ export default function RecipeDetail() {
 
         <div className="lg:col-span-1">
           <div className="card sticky top-24 space-y-4">
-            {/* Mini card preview */}
             <button
-              onClick={() => setShowCardStudio(true)}
+              onClick={openCardView}
               className="group w-full cursor-pointer"
-              aria-label="Open card studio — print or download PDF"
+              aria-label="View recipe card on your phone"
             >
               <div
                 className="relative overflow-hidden rounded-lg shadow-sm group-hover:shadow-md transition-all"
@@ -214,11 +231,39 @@ export default function RecipeDetail() {
                 </div>
               </div>
               <p className="mt-2 text-center">
-                <span className="text-sm font-semibold text-wicker-700 group-hover:text-gingham transition-colors">
-                  Make recipe card
+                <span className="text-sm font-semibold text-wicker-700 group-hover:text-gingham transition-colors inline-flex items-center justify-center gap-1.5">
+                  <Smartphone className="w-4 h-4" aria-hidden />
+                  View recipe card
                 </span>
-                <span className="block text-xs text-wicker-500 mt-0.5">Print or PDF</span>
+                <span className="block text-xs text-wicker-500 mt-0.5">Full-screen view, save as image, or print</span>
               </p>
+            </button>
+
+            <label className="recipe-detail__large-text flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={largeText}
+                onChange={(e) => setLargeText(e.target.checked)}
+                className="mt-1 rounded border-wicker-300 text-gingham focus:ring-gingham"
+              />
+              <span>
+                <span className="flex items-center gap-1.5 font-semibold text-wicker-800 text-sm">
+                  <Type className="w-4 h-4 text-gingham" aria-hidden />
+                  Large text
+                </span>
+                <span className="block text-xs text-wicker-500 mt-0.5">
+                  Bigger type on the card — easier to read from across the counter
+                </span>
+              </span>
+            </label>
+
+            <button
+              type="button"
+              onClick={openCardStudio}
+              className="btn-secondary w-full flex items-center justify-center gap-2 text-sm"
+            >
+              <Printer className="w-4 h-4" />
+              Print or download PDF
             </button>
 
             <hr className="border-wicker-200" />

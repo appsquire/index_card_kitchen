@@ -1,9 +1,12 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Link as LinkIcon, PenLine, Printer, Search } from 'lucide-react'
+import { Plus, Link as LinkIcon, PenLine, Smartphone, Search } from 'lucide-react'
 import { useRecipes } from '../context/RecipeContext'
 import RecipeCard from '../components/RecipeCard'
 import SearchBar from '../components/SearchBar'
+import HomeSampleCard from '../components/HomeSampleCard'
+import CardStudio from '../components/CardStudio'
+import { SAMPLE_RECIPE } from '../data/sampleRecipe'
 
 const STEPS = [
   {
@@ -12,9 +15,9 @@ const STEPS = [
     text: 'Write a recipe by hand, or paste a link and we’ll pull the details.',
   },
   {
-    icon: Printer,
-    title: 'Make the card',
-    text: 'Pick a size and paper, print it, or keep it digital in the box.',
+    icon: Smartphone,
+    title: 'Cook from the card',
+    text: 'Open a clean index card on your phone — large type, easy to read from the counter.',
   },
   {
     icon: Search,
@@ -27,6 +30,7 @@ export default function Home() {
   const { recipes, categories, loading } = useRecipes()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState(null)
+  const [showSampleCard, setShowSampleCard] = useState(false)
 
   const enrichedRecipes = useMemo(() => {
     return recipes.map((recipe) => ({
@@ -65,6 +69,17 @@ export default function Home() {
   const isEmpty = recipes.length === 0
   const noMatches = !isEmpty && filteredRecipes.length === 0
 
+  if (showSampleCard) {
+    return (
+      <CardStudio
+        recipe={SAMPLE_RECIPE}
+        variant="view"
+        initialPhotoOpen
+        onClose={() => setShowSampleCard(false)}
+      />
+    )
+  }
+
   return (
     <div className="home">
       <section className="home-intro">
@@ -92,6 +107,10 @@ export default function Home() {
           </div>
         </div>
 
+        <HomeSampleCard onViewSample={() => setShowSampleCard(true)} />
+      </section>
+
+      <section className="home-steps-wrap" aria-label="How it works">
         <ol className="home-steps">
           {STEPS.map((step, i) => {
             const Icon = step.icon
@@ -136,12 +155,8 @@ export default function Home() {
 
           {isEmpty ? (
             <div className="recipe-box__empty">
-              <div className="recipe-box__empty-cards" aria-hidden>
-                <div className="recipe-box__ghost rotate-[-6deg]" />
-                <div className="recipe-box__ghost rotate-[3deg]" />
-                <div className="recipe-box__ghost rotate-[-1deg]" />
-              </div>
-              <h2 className="font-hand text-3xl text-enamel mb-2">Open box, empty slots</h2>
+              <HomeSampleCard compact onViewSample={() => setShowSampleCard(true)} />
+              <h2 className="font-hand text-3xl text-enamel mb-2 mt-4">Your box is waiting</h2>
               <p className="text-butter-light/90 max-w-md mx-auto mb-4 leading-relaxed">
                 First card’s the hardest. File a family favorite or pull one in from a link —
                 it’ll show up here like it belongs in a wooden box on the counter.
