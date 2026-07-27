@@ -69,7 +69,7 @@ export default function Home() {
     <div className="home">
       <section className="home-intro">
         <div className="home-intro__copy">
-          <p className="font-hand text-gingham text-xl mb-1">Index Card Kitchen</p>
+          <p className="font-hand text-gingham text-lg mb-2">Index Card Kitchen</p>
           <h1 className="home-intro__title">
             Your recipes, filed like Nana kept them
           </h1>
@@ -142,7 +142,7 @@ export default function Home() {
                 <div className="recipe-box__ghost rotate-[-1deg]" />
               </div>
               <h2 className="font-hand text-3xl text-enamel mb-2">Open box, empty slots</h2>
-              <p className="text-butter-light/90 max-w-md mx-auto mb-6 leading-relaxed">
+              <p className="text-butter-light/90 max-w-md mx-auto mb-4 leading-relaxed">
                 First card’s the hardest. File a family favorite or pull one in from a link —
                 it’ll show up here like it belongs in a wooden box on the counter.
               </p>

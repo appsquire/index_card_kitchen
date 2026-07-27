@@ -14,7 +14,7 @@ export default function Layout() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <header className="kitchen-header">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-[4.25rem]">
@@ -117,14 +117,14 @@ export default function Layout() {
         </div>
       )}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-up">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-fade-up">
         <Outlet />
       </main>
 
-      <footer className="site-footer mt-16 border-t-2 border-wicker-200/80">
-        <div className="site-footer__kitchen bg-enamel/60">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <p className="text-center font-hand text-xl text-wicker-600 mb-3">
+      <footer className="site-footer mt-auto">
+        <div className="site-footer__kitchen">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+            <p className="text-center font-hand text-lg text-wicker-600 mb-2">
               Index Card Kitchen — come hungry, leave with a card
             </p>
             <p className="text-center text-sm text-wicker-500">
@@ -146,7 +146,7 @@ export default function Layout() {
           className="site-footer__appsquire group"
           aria-label="Built by AppSquire — visit appsquire.com"
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-5">
+          <div className="site-footer__appsquire-inner">
             <span className="site-footer__stamp" aria-hidden>
               Launch Lab
             </span>
