@@ -1,10 +1,12 @@
 import LegalLayout, { LegalSection } from '../components/LegalLayout'
+import { COPYRIGHT_OWNER, copyrightYear } from '../data/legal'
 
 const CONTACT = 'hello@indexcardkitchen.com'
+const LAST_UPDATED = `July 27, ${copyrightYear()}`
 
 export default function Terms() {
   return (
-    <LegalLayout title="Terms of Service" lastUpdated="July 27, 2026">
+    <LegalLayout title="Terms of Service" lastUpdated={LAST_UPDATED}>
       <LegalSection title="The short version">
         <p>
           Index Card Kitchen is a <strong>personal recipe box</strong>. You save, organize, and
@@ -88,9 +90,9 @@ export default function Terms() {
 
       <LegalSection title="Our content">
         <p>
-          Index Card Kitchen, including its name, design, and software, is ©{' '}
-          {new Date().getFullYear()} AppSquire Consulting Ltd. All rights reserved. Recipe content
-          you import or enter remains yours; we do not claim ownership of your recipes.
+          Index Card Kitchen, including its name, design, and software, is © {copyrightYear()}{' '}
+          {COPYRIGHT_OWNER}. All rights reserved. Recipe content you import or enter remains
+          yours; we do not claim ownership of your recipes.
         </p>
       </LegalSection>
 

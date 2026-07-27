@@ -1,10 +1,12 @@
 import LegalLayout, { LegalSection } from '../components/LegalLayout'
+import { copyrightNotice, copyrightYear } from '../data/legal'
 
 const CONTACT = 'hello@indexcardkitchen.com'
+const LAST_UPDATED = `July 27, ${copyrightYear()}`
 
 export default function Privacy() {
   return (
-    <LegalLayout title="Privacy Policy" lastUpdated="July 27, 2026">
+    <LegalLayout title="Privacy Policy" lastUpdated={LAST_UPDATED}>
       <LegalSection title="Overview">
         <p>
           Index Card Kitchen lets you save recipes locally in your browser and, if you choose,
@@ -97,6 +99,7 @@ export default function Privacy() {
             {CONTACT}
           </a>
         </p>
+        <p className="text-sm text-wicker-500 mt-3">{copyrightNotice()}</p>
       </LegalSection>
     </LegalLayout>
   )

@@ -1,6 +1,7 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useRecipes } from '../context/RecipeContext'
+import { copyrightNotice } from '../data/legal'
 import { Plus, LogIn, LogOut, User, FolderOpen, Cloud } from 'lucide-react'
 
 export default function Layout() {
@@ -137,7 +138,7 @@ export default function Layout() {
               </Link>
             </p>
             <p className="text-center text-xs text-wicker-500/90 mt-2">
-              © {new Date().getFullYear()} AppSquire Consulting Ltd. All rights reserved.
+              {copyrightNotice()}
             </p>
           </div>
         </div>
