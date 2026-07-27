@@ -1554,12 +1554,13 @@
   display: block;
   background: linear-gradient(
     135deg,
-    #ffc947 0%,
-    #f9a825 42%,
-    #f08800 100%
+    #faf6e8 0%,
+    #f0e2b8 48%,
+    #e8d49a 100%
   );
-  color: #2d3436;
+  color: #374f46;
   text-decoration: none;
+  border-top: 1px solid rgba(212, 180, 74, 0.28);
   transition: filter 0.2s ease;
 }
 
@@ -1587,7 +1588,7 @@
 }
 
 .site-footer__appsquire:focus-visible {
-  outline: 2px solid #2d3436;
+  outline: 2px solid #557a6e;
   outline-offset: -4px;
 }
 
@@ -1597,12 +1598,12 @@
   font-size: 0.95rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #2d3436;
+  color: #446358;
   padding: 0.35rem 0.75rem;
-  border: 2px dashed rgba(45, 52, 54, 0.45);
+  border: 2px dashed rgba(85, 122, 110, 0.4);
   border-radius: 4px;
   transform: rotate(-3deg);
-  background: rgba(255, 254, 250, 0.72);
+  background: rgba(255, 254, 250, 0.82);
   transition: transform 0.25s ease;
 }
 
@@ -1618,14 +1619,14 @@
   width: 2.35rem;
   height: 2.35rem;
   border-radius: 7px;
-  background: linear-gradient(145deg, #ffc947 0%, #f08800 100%);
-  color: #fff;
+  background: linear-gradient(145deg, #e8d49a 0%, #c9a83a 100%);
+  color: #1c2924;
   font-family: Nunito, ui-rounded, system-ui, sans-serif;
   font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1;
-  box-shadow: 0 2px 0 rgba(45, 52, 54, 0.12);
+  box-shadow: 0 1px 0 rgba(28, 41, 36, 0.12);
 }
 
 .site-footer__appsquire-text {
@@ -1642,7 +1643,7 @@
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(45, 52, 54, 0.78);
+  color: rgba(68, 99, 88, 0.85);
 }
 
 .site-footer__appsquire-brand {
@@ -1658,7 +1659,7 @@
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1;
-  color: #2d3436;
+  color: #2a3d36;
   text-transform: lowercase;
 }
 
@@ -1668,14 +1669,14 @@
   font-weight: 800;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #c47a08;
+  color: #8a7340;
   line-height: 1;
 }
 
 .site-footer__appsquire-meta {
   font-size: 0.75rem;
   font-weight: 600;
-  color: rgba(45, 52, 54, 0.72);
+  color: rgba(68, 99, 88, 0.78);
   letter-spacing: 0.04em;
 }
 
@@ -1683,7 +1684,7 @@
   flex-shrink: 0;
   font-size: 1.25rem;
   font-weight: 800;
-  color: #2d3436;
+  color: #557a6e;
   opacity: 0;
   transform: translateX(-6px);
   transition: opacity 0.2s ease, transform 0.2s ease;
