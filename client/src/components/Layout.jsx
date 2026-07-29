@@ -106,7 +106,7 @@ export default function Layout() {
       {!isAuthenticated && (
         <div className="bg-butter-light/80 border-b border-butter-dark/30 px-4 py-2.5 text-center text-sm text-wicker-800">
           <span className="hidden sm:inline">
-            Your recipes live in this browser only — clear your data and they're gone.{' '}
+            Your recipes live in this browser only — clear your data and they&apos;re gone.{' '}
           </span>
           <span className="sm:hidden">
             Recipes are stored locally only.{' '}

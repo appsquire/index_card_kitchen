@@ -65,7 +65,6 @@ function waitPaint() {
 
 function readOverflow(host, page, plan) {
   const body = host.querySelector('.recipe-index-card__body')
-  const frame = host.querySelector('.recipe-index-card__frame')
   if (!body) return true
 
   const layout = pageBodyLayout(page, plan)
