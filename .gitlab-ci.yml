@@ -79,13 +79,18 @@ docker:build:
 # DISABLED AUTO DEVOPS JOBS
 # ─────────────────────────────────────────────────────────────────────
 # These Auto DevOps jobs don't work on ARM runners, so we disable them.
+# GitLab still requires script/run/trigger on every job definition.
 # Remove these overrides if you switch to an x86 runner.
 
 code_quality:
+  script:
+    - echo "code_quality disabled"
   rules:
     - when: never
 
 container_scanning:
+  script:
+    - echo "container_scanning disabled"
   rules:
     - when: never
 
