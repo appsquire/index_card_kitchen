@@ -75,9 +75,18 @@ describe('planRecipeCard', () => {
     assertPlanPreservesContent(gazpachoRecipe, plan)
   })
 
-  it('does not use split layout on continuation-only pages', () => {
+  it('uses split panes on multi-page landscape when both sections remain', () => {
     const plan = planRecipeCard(gazpachoRecipe, { size: '4x6' })
-    for (let i = 1; i < plan.pages.length; i += 1) {
+    assert.ok(plan.pages.length > 1)
+    assert.equal(plan.pages[0].mode, 'split')
+    assert.ok(plan.pages[0].ingredients.length > 0)
+    assert.ok(plan.pages[0].instructions.length > 0)
+    assert.equal(pageBodyLayout(plan.pages[0], plan), 'split')
+  })
+
+  it('falls back to stacked for one-sided remainder pages', () => {
+    const plan = planRecipeCard(gazpachoRecipe, { size: '4x6' })
+    for (let i = 0; i < plan.pages.length; i += 1) {
       const layout = pageBodyLayout(plan.pages[i], plan)
       if (plan.pages[i].ingredients.length && !plan.pages[i].instructions.length) {
         assert.equal(layout, 'stacked', `page ${i} ingredients-only`)
@@ -86,6 +95,19 @@ describe('planRecipeCard', () => {
         assert.equal(layout, 'stacked', `page ${i} directions-only`)
       }
     }
+  })
+
+  it('packs letter overflow as a continuous stacked stream', () => {
+    const plan = planRecipeCard(gazpachoRecipe, { size: 'letter' })
+    assert.ok(plan.pages.length >= 1)
+    assert.equal(plan.strategy, 'stacked')
+    // Should not leave an ingredients-only front when directions exist and room remains
+    // on later pages — continuous stream may still start with ings-heavy pages, but
+    // every page should be stacked mode.
+    for (const page of plan.pages) {
+      assert.equal(page.mode, 'stacked')
+    }
+    assertPlanPreservesContent(gazpachoRecipe, plan)
   })
 
   it('caps output at MAX_CARD_PAGES', () => {

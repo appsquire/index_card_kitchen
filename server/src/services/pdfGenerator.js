@@ -334,12 +334,17 @@ export function generateRecipeHtml(recipe, { size, style, dims, plan, packOntoLe
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 0.18in 0.22in;
-      align-items: start;
+      align-items: stretch;
       flex: 1;
       min-height: 0;
       overflow: hidden;
     }
-    .body.split .pane { min-width: 0; min-height: 0; }
+    .body.split .pane {
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+    }
     .body.stacked {
       display: flex;
       flex-direction: column;

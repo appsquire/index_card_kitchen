@@ -1,9 +1,12 @@
 /**
  * One-shot DOM measure — auto layout.
- * Binary-search packing keeps renders O(log n) per page instead of one per item.
+ * Landscape: aligned split panes, then stacked remainder.
+ * Letter: continuous stacked stream.
+ * Binary-search packing keeps renders O(log n) per page.
  */
 import { createElement } from 'react'
 import { createRoot } from 'react-dom/client'
+import { flushSync } from 'react-dom'
 import RecipeCardPrint from '../components/RecipeCardPrint'
 import {
   MAX_CARD_PAGES,
@@ -16,19 +19,48 @@ let fontsPrimed = false
 
 async function primeFonts() {
   if (fontsPrimed) return
+  if (typeof document === 'undefined' || !document.fonts) {
+    fontsPrimed = true
+    return
+  }
+
   try {
+    // Actively pull the faces the card uses — CSS @import alone is too late
+    // for the first measure pass (wrong metrics → sparse pages that "fix"
+    // after a later remasure once fonts are in).
+    await Promise.all([
+      document.fonts.load('400 48px "Patrick Hand"'),
+      document.fonts.load('400 22px "Patrick Hand"'),
+      document.fonts.load('800 15px Nunito'),
+      document.fonts.load('700 11px Nunito'),
+      document.fonts.load('400 10.5px Nunito'),
+    ])
     await Promise.race([
-      document.fonts?.ready ?? Promise.resolve(),
-      new Promise((r) => setTimeout(r, 300)),
+      document.fonts.ready,
+      new Promise((r) => setTimeout(r, 1500)),
     ])
   } catch {
     /* ignore */
   }
-  fontsPrimed = true
+
+  // Only skip future waits when the faces we need are actually usable.
+  const ready =
+    document.fonts.check('400 48px "Patrick Hand"') &&
+    document.fonts.check('800 15px Nunito')
+  if (ready) fontsPrimed = true
 }
 
-function waitFrame() {
-  return new Promise((r) => requestAnimationFrame(r))
+/** True when card display fonts are loaded enough to measure reliably. */
+export function cardFontsReady() {
+  if (typeof document === 'undefined' || !document.fonts) return true
+  return (
+    document.fonts.check('400 48px "Patrick Hand"') &&
+    document.fonts.check('800 15px Nunito')
+  )
+}
+
+function waitPaint() {
+  return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
 }
 
 function readOverflow(host, page, plan) {
@@ -38,13 +70,14 @@ function readOverflow(host, page, plan) {
 
   const layout = pageBodyLayout(page, plan)
   const bodyBottom = body.getBoundingClientRect().bottom
-  const clipped = (node) => Boolean(node && node.scrollHeight > node.clientHeight + 2)
+  // Small slack: subpixel / font rounding should not force an extra page.
+  const clipped = (node) => Boolean(node && node.scrollHeight > node.clientHeight + 4)
 
   const pastBottom = (root) => {
     const nodes = root?.querySelectorAll('li, h2') || []
     if (!nodes.length) return false
     const last = nodes[nodes.length - 1]
-    return last.getBoundingClientRect().bottom > bodyBottom + 2
+    return last.getBoundingClientRect().bottom > bodyBottom + 4
   }
 
   if (layout === 'split') {
@@ -55,13 +88,13 @@ function readOverflow(host, page, plan) {
         clipped(panes[1]) ||
         pastBottom(panes[0]) ||
         pastBottom(panes[1]) ||
-        clipped(body) ||
-        clipped(frame)
+        clipped(body)
       )
     }
   }
 
-  return clipped(body) || clipped(frame) || pastBottom(body)
+  // Body only — frame scrollHeight is noisy with flex + footer.
+  return clipped(body) || pastBottom(body)
 }
 
 function clonePage(page) {
@@ -73,24 +106,29 @@ function clonePage(page) {
 }
 
 function buildPlan(pages) {
-  return {
-    pages,
-    strategy: pages.length === 1 && pages[0]?.mode === 'split' ? 'split' : 'stacked',
-  }
+  const strategy =
+    pages.length === 1 && pages[0]?.mode === 'split'
+      ? 'split'
+      : pages.some((p) => p.mode === 'split')
+        ? 'split'
+        : 'stacked'
+  return { pages, strategy }
 }
 
 async function renderPage(host, root, recipe, opts, pages, pageIndex) {
   const plan = buildPlan(pages)
-  root.render(
-    createElement(RecipeCardPrint, {
-      recipe,
-      size: opts.size,
-      style: opts.style,
-      pageIndex,
-      plan,
-    })
-  )
-  await waitFrame()
+  flushSync(() => {
+    root.render(
+      createElement(RecipeCardPrint, {
+        recipe,
+        size: opts.size,
+        style: opts.style,
+        pageIndex,
+        plan,
+      })
+    )
+  })
+  await waitPaint()
   return readOverflow(host, pages[pageIndex], plan)
 }
 
@@ -110,8 +148,8 @@ async function fitCount(host, root, recipe, opts, pages, pageIndex, basePage, it
     const mid = Math.ceil((lo + hi) / 2)
     const trial = clonePage(basePage)
     const slice = items.slice(start, start + mid)
-    if (kind === 'ing') trial.ingredients.push(...slice)
-    else trial.instructions.push(...slice)
+    if (kind === 'ing') trial.ingredients = [...basePage.ingredients, ...slice]
+    else trial.instructions = [...basePage.instructions, ...slice]
 
     const trialPages = pages.map((p, i) => (i === pageIndex ? trial : clonePage(p)))
     const overflow = await renderPage(host, root, recipe, opts, trialPages, pageIndex)
@@ -126,42 +164,167 @@ async function fitCount(host, root, recipe, opts, pages, pageIndex, basePage, it
   return best
 }
 
-async function packItems(host, root, recipe, opts, items, kind, pages) {
-  let page
-  const last = pages[pages.length - 1]
+async function packStackedRemainder(host, root, recipe, opts, ingredients, instructions, pages) {
+  let ingStart = 0
+  let dirStart = 0
 
-  if (kind === 'dir' && last?.instructions?.length === 0 && last?.ingredients?.length > 0) {
-    page = last
-  } else {
-    page = emptyPage('stacked')
-    pages.push(page)
+  // Continue onto the last page when it has room (ings then dirs).
+  const ensurePage = () => {
+    if (!pages.length) pages.push(emptyPage('stacked'))
+    return pages[pages.length - 1]
   }
 
-  let start = 0
-  while (start < items.length && pages.length <= MAX_CARD_PAGES) {
+  while (ingStart < ingredients.length && pages.length <= MAX_CARD_PAGES) {
+    let page = ensurePage()
+    if (page.mode === 'split' || (page.ingredients.length === 0 && page.instructions.length > 0)) {
+      page = emptyPage('stacked')
+      pages.push(page)
+    }
     const pageIndex = pages.indexOf(page)
-    const count = await fitCount(host, root, recipe, opts, pages, pageIndex, page, items, start, kind)
+    const base = clonePage(page)
+    const count = await fitCount(
+      host,
+      root,
+      recipe,
+      opts,
+      pages,
+      pageIndex,
+      base,
+      ingredients,
+      ingStart,
+      'ing'
+    )
 
     if (count === 0) {
-      // Single oversized item — must keep it
-      if (kind === 'ing') page.ingredients.push(items[start])
-      else page.instructions.push(items[start])
-      start += 1
-      if (start < items.length) {
-        page = emptyPage('stacked')
-        pages.push(page)
+      page.ingredients.push(ingredients[ingStart])
+      ingStart += 1
+      if (ingStart < ingredients.length || dirStart < instructions.length) {
+        pages.push(emptyPage('stacked'))
       }
       continue
     }
 
-    const slice = items.slice(start, start + count)
-    if (kind === 'ing') page.ingredients.push(...slice)
-    else page.instructions.push(...slice)
-    start += count
+    page.ingredients.push(...ingredients.slice(ingStart, ingStart + count))
+    ingStart += count
+    if (ingStart < ingredients.length) pages.push(emptyPage('stacked'))
+  }
 
-    if (start < items.length) {
+  while (dirStart < instructions.length && pages.length <= MAX_CARD_PAGES) {
+    let page = ensurePage()
+    // Prefer filling the last ings-only stacked page before opening a new one.
+    if (page.mode === 'split') {
       page = emptyPage('stacked')
       pages.push(page)
+    }
+    const pageIndex = pages.indexOf(page)
+    const base = clonePage(page)
+    const count = await fitCount(
+      host,
+      root,
+      recipe,
+      opts,
+      pages,
+      pageIndex,
+      base,
+      instructions,
+      dirStart,
+      'dir'
+    )
+
+    if (count === 0) {
+      page.instructions.push(instructions[dirStart])
+      dirStart += 1
+      if (dirStart < instructions.length) pages.push(emptyPage('stacked'))
+      continue
+    }
+
+    page.instructions.push(...instructions.slice(dirStart, dirStart + count))
+    dirStart += count
+    if (dirStart < instructions.length) pages.push(emptyPage('stacked'))
+  }
+
+  return pages.filter((p) => p.ingredients.length || p.instructions.length)
+}
+
+/**
+ * Fill both panes on each landscape page while both sections remain.
+ * Uses mode:'split' with a placeholder sibling so pane width is correct
+ * while measuring one side.
+ */
+async function packAlignedSplit(host, root, recipe, opts, ingredients, instructions) {
+  const pages = []
+  let ingStart = 0
+  let dirStart = 0
+
+  while (
+    (ingStart < ingredients.length || dirStart < instructions.length) &&
+    pages.length < MAX_CARD_PAGES
+  ) {
+    const remainingIngs = ingredients.length - ingStart
+
+    if (ingStart >= ingredients.length || dirStart >= instructions.length || remainingIngs <= 2) {
+      return packStackedRemainder(
+        host,
+        root,
+        recipe,
+        opts,
+        ingredients.slice(ingStart),
+        instructions.slice(dirStart),
+        pages
+      )
+    }
+
+    const page = emptyPage('split')
+    pages.push(page)
+    const pageIndex = pages.length - 1
+
+    // Measure left pane at split width: keep a dirs placeholder so layout
+    // stays split, then replace with the real dirs fit.
+    page.instructions = [instructions[dirStart]]
+    const ingBase = { mode: 'split', ingredients: [], instructions: page.instructions }
+    let ingCount = await fitCount(
+      host,
+      root,
+      recipe,
+      opts,
+      pages,
+      pageIndex,
+      ingBase,
+      ingredients,
+      ingStart,
+      'ing'
+    )
+    if (ingCount === 0) {
+      page.ingredients = [ingredients[ingStart]]
+      ingCount = 1
+    } else {
+      page.ingredients = ingredients.slice(ingStart, ingStart + ingCount)
+    }
+    ingStart += ingCount
+
+    const dirBase = { mode: 'split', ingredients: [...page.ingredients], instructions: [] }
+    let dirCount = await fitCount(
+      host,
+      root,
+      recipe,
+      opts,
+      pages,
+      pageIndex,
+      dirBase,
+      instructions,
+      dirStart,
+      'dir'
+    )
+    if (dirCount === 0) {
+      page.instructions = [instructions[dirStart]]
+      dirCount = 1
+    } else {
+      page.instructions = instructions.slice(dirStart, dirStart + dirCount)
+    }
+    dirStart += dirCount
+
+    if (!page.ingredients.length || !page.instructions.length) {
+      page.mode = 'stacked'
     }
   }
 
@@ -198,13 +361,17 @@ export async function measureAndPackPlan(recipe, { size = '4x6', style = 'enamel
       return { pages: [clonePage(singlePage)], strategy: singlePage.mode, measured: true }
     }
 
-    let pages = []
-    pages = await packItems(host, root, recipe, opts, ingredients, 'ing', pages)
-    pages = await packItems(host, root, recipe, opts, instructions, 'dir', pages)
+    let pages
+    if (size === 'letter') {
+      pages = await packStackedRemainder(host, root, recipe, opts, ingredients, instructions, [])
+    } else {
+      pages = await packAlignedSplit(host, root, recipe, opts, ingredients, instructions)
+    }
 
-    if (pages.length === 0) pages = [emptyPage()]
+    if (!pages.length) pages = [emptyPage()]
 
-    return { pages: pages.slice(0, MAX_CARD_PAGES), strategy: 'stacked', measured: true }
+    const strategy = pages.some((p) => p.mode === 'split') ? 'split' : 'stacked'
+    return { pages: pages.slice(0, MAX_CARD_PAGES), strategy, measured: true }
   } catch (err) {
     console.warn('Card measure-pack failed, using heuristic plan', err)
     return { ...planRecipeCard(recipe, { size }), measured: false }

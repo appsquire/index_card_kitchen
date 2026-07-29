@@ -2,7 +2,9 @@
  * Classic recipe-card planner (auto layout).
  *
  * One card: ingredients | directions side-by-side when everything fits.
- * Overflow: ingredients through, then directions — full-width pages only.
+ * Landscape overflow: fill both panes on each page (aligned split), then
+ * full-width stacked for whichever section remains.
+ * Letter overflow: continuous stacked stream (ings then dirs).
  * Server uses line estimates; client refines with DOM measure.
  */
 
@@ -15,18 +17,27 @@ export const SIZE_STYLES = {
 }
 
 function lineBudget(size) {
-  if (size === 'letter') return 44
-  if (size === '5x7') return 15
-  return 11
+  // Stacked full-width body. Prefer slight underfill over clipping.
+  if (size === 'letter') return 50
+  if (size === '5x7') return 17
+  return 12
 }
 
 function splitPaneBudget(size) {
-  if (size === 'letter') return 36
-  if (size === '5x7') return 13
-  return 9
+  // Half-width pane on landscape split pages.
+  if (size === 'letter') return 40
+  if (size === '5x7') return 14
+  return 10
 }
 
 function charsPerLine(size, kind) {
+  // Split panes are narrower than stacked full-width.
+  if (size === 'letter') return kind === 'ing' ? 56 : 58
+  if (size === '5x7') return kind === 'ing' ? 32 : 34
+  return kind === 'ing' ? 28 : 30
+}
+
+function stackedCharsPerLine(size, kind) {
   if (size === 'letter') return kind === 'ing' ? 56 : 58
   if (size === '5x7') return kind === 'ing' ? 44 : 48
   return kind === 'ing' ? 38 : 42
@@ -40,36 +51,37 @@ function ingredientText(ing) {
   return [unit, name].filter(Boolean).join(' ')
 }
 
-function estimateIngLines(ing, size) {
-  return Math.max(1, Math.ceil(ingredientText(ing).length / charsPerLine(size, 'ing')))
+function estimateIngLines(ing, size, width = 'pane') {
+  const cpl = width === 'stacked' ? stackedCharsPerLine(size, 'ing') : charsPerLine(size, 'ing')
+  return Math.max(1, Math.ceil(ingredientText(ing).length / cpl))
 }
 
-function estimateStepLines(inst, size) {
+function estimateStepLines(inst, size, width = 'pane') {
   const text = inst?.step ? String(inst.step) : ''
-  return Math.max(1, Math.ceil(text.length / charsPerLine(size, 'step')))
+  const cpl = width === 'stacked' ? stackedCharsPerLine(size, 'step') : charsPerLine(size, 'step')
+  return Math.max(1, Math.ceil(text.length / cpl))
 }
 
 const HEADING = 2
 
-function totalIngLines(ings, size) {
+function totalIngLines(ings, size, width = 'pane') {
   if (!ings.length) return 0
-  return HEADING + ings.reduce((n, i) => n + estimateIngLines(i, size), 0)
+  return HEADING + ings.reduce((n, i) => n + estimateIngLines(i, size, width), 0)
 }
 
-function totalStepLines(steps, size) {
+function totalStepLines(steps, size, width = 'pane') {
   if (!steps.length) return 0
-  return HEADING + steps.reduce((n, s) => n + estimateStepLines(s, size), 0)
+  return HEADING + steps.reduce((n, s) => n + estimateStepLines(s, size, width), 0)
 }
 
 function fitsSinglePage(ings, steps, size) {
   if (size === 'letter') {
-    const blocks = (ings.length ? 1 : 0) + (steps.length ? 1 : 0)
-    const total =
-      totalIngLines(ings, size) + totalStepLines(steps, size) + HEADING * Math.max(blocks, 1)
-    return total <= lineBudget(size)
+    const gap = ings.length && steps.length ? 1 : 0
+    return totalIngLines(ings, size, 'stacked') + totalStepLines(steps, size, 'stacked') + gap <=
+      lineBudget(size)
   }
   const pane = splitPaneBudget(size)
-  return totalIngLines(ings, size) <= pane && totalStepLines(steps, size) <= pane
+  return totalIngLines(ings, size, 'pane') <= pane && totalStepLines(steps, size, 'pane') <= pane
 }
 
 /** Landscape cards: side-by-side. Full page: vertical (portrait sheet). */
@@ -85,35 +97,64 @@ function clonePage(page) {
   }
 }
 
-function packSection(items, estimate, size, budget, kind) {
-  const pages = []
-  let batch = []
+/** Greedy fill from `start` until pane/stacked budget is used. */
+function takeItems(items, start, estimate, size, budget, width) {
+  const batch = []
   let used = 0
+  let idx = start
 
-  const flush = () => {
-    if (!batch.length) return
-    const page = { mode: 'stacked', ingredients: [], instructions: [] }
-    if (kind === 'ing') page.ingredients = [...batch]
-    else page.instructions = [...batch]
-    pages.push(page)
-    batch = []
-    used = 0
+  while (idx < items.length) {
+    const cost = estimate(items[idx], size, width) + (batch.length === 0 ? HEADING : 0)
+    if (batch.length > 0 && used + cost > budget) break
+    if (batch.length === 0 && cost > budget) {
+      batch.push(items[idx])
+      idx += 1
+      break
+    }
+    batch.push(items[idx])
+    used += cost
+    idx += 1
   }
 
-  for (const item of items) {
-    const cost = estimate(item, size) + (batch.length === 0 ? HEADING : 0)
-    if (batch.length > 0 && used + cost > budget) flush()
-    if (batch.length === 0 && cost > budget) {
-      const page = { mode: 'stacked', ingredients: [], instructions: [] }
-      if (kind === 'ing') page.ingredients = [item]
-      else page.instructions = [item]
-      pages.push(page)
+  return { batch, next: idx }
+}
+
+/**
+ * Landscape overflow: each page fills Ingredients | Directions until one
+ * list is exhausted, then remaining items use full-width stacked pages.
+ */
+function packAlignedSplit(ings, steps, size) {
+  const pane = splitPaneBudget(size)
+  const pages = []
+  let i = 0
+  let d = 0
+
+  while ((i < ings.length || d < steps.length) && pages.length < MAX_CARD_PAGES) {
+    const remainingIngs = ings.length - i
+    const remainingDirs = steps.length - d
+
+    // Prefer full-width stacked when one side would leave a near-empty pane.
+    if (i < ings.length && d < steps.length && remainingIngs > 2 && remainingDirs > 0) {
+      const ingTake = takeItems(ings, i, estimateIngLines, size, pane, 'pane')
+      const dirTake = takeItems(steps, d, estimateStepLines, size, pane, 'pane')
+      pages.push({
+        mode: 'split',
+        ingredients: ingTake.batch,
+        instructions: dirTake.batch,
+      })
+      i = ingTake.next
+      d = dirTake.next
       continue
     }
-    batch.push(item)
-    used += cost
+
+    const rest = packStackedStream(ings.slice(i), steps.slice(d), size)
+    for (const page of rest) {
+      if (pages.length >= MAX_CARD_PAGES) break
+      pages.push(page)
+    }
+    break
   }
-  flush()
+
   return pages
 }
 
@@ -131,7 +172,9 @@ function packStackedStream(ings, steps, size) {
 
   const add = (item, kind) => {
     const cost =
-      (kind === 'ing' ? estimateIngLines(item, size) : estimateStepLines(item, size)) +
+      (kind === 'ing'
+        ? estimateIngLines(item, size, 'stacked')
+        : estimateStepLines(item, size, 'stacked')) +
       (page.ingredients.length === 0 && page.instructions.length === 0 ? HEADING : 0) +
       (kind === 'dir' && page.ingredients.length > 0 && page.instructions.length === 0 ? HEADING : 0)
 
@@ -168,26 +211,20 @@ export function planRecipeCard(recipe, { size = '4x6' } = {}) {
     }
   }
 
-  const ingPages = packSection(ingredients, estimateIngLines, size, lineBudget(size), 'ing')
-  const dirPages = packSection(instructions, estimateStepLines, size, lineBudget(size), 'dir')
+  const pages =
+    size === 'letter'
+      ? packStackedStream(ingredients, instructions, size)
+      : packAlignedSplit(ingredients, instructions, size)
 
-  if (ingPages.length && dirPages.length) {
-    const lastIng = ingPages[ingPages.length - 1]
-    const firstDir = dirPages[0]
-    const combined =
-      totalIngLines(lastIng.ingredients, size) + totalStepLines(firstDir.instructions, size)
-    if (combined <= lineBudget(size)) {
-      lastIng.instructions = [...firstDir.instructions]
-      dirPages.shift()
-    }
+  const clipped = pages.slice(0, MAX_CARD_PAGES)
+  if (clipped.length === 0) {
+    clipped.push({ mode: 'stacked', ingredients: [], instructions: [] })
   }
 
-  const pages = [...ingPages, ...dirPages].slice(0, MAX_CARD_PAGES)
-  if (pages.length === 0) {
-    pages.push({ mode: 'stacked', ingredients: [], instructions: [] })
+  return {
+    pages: clipped,
+    strategy: size === 'letter' ? 'stacked' : 'split',
   }
-
-  return { pages, strategy: 'stacked' }
 }
 
 export function getPageChipLabel(pageIndex, totalPages) {
@@ -211,7 +248,7 @@ export function sectionHeadingOnPage(plan, pageIndex, section) {
   const items = page[field] || []
   if (!items.length) return false
 
-  const first = pages.findIndex((p) => ((p[field] || []).length > 0))
+  const first = pages.findIndex((p) => (p[field] || []).length > 0)
   return first === pageIndex
 }
 
@@ -233,7 +270,7 @@ export function packPageIndexes(pageCount, size) {
   return sheets
 }
 
-/** Side-by-side only when both sections are on this page. */
+/** Side-by-side when this page is in split mode and has both sections. */
 export function pageBodyLayout(page, plan) {
   const ings = page?.ingredients?.length > 0
   const dirs = page?.instructions?.length > 0

@@ -287,8 +287,9 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.18in 0.22in;
-  align-items: start;
+  align-items: stretch;
   height: 100%;
+  min-height: 0;
 }
 
 .recipe-index-card--letter .recipe-index-card__body--split {
@@ -298,6 +299,8 @@
 .recipe-index-card__pane {
   min-width: 0;
   min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .recipe-index-card__block h2 {

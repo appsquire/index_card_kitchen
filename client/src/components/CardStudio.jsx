@@ -10,7 +10,7 @@ import RecipeCardPrint, {
   getPageChipLabel,
   SIZE_STYLES,
 } from './RecipeCardPrint'
-import { measureAndPackPlan } from '../utils/measureCardPlan'
+import { measureAndPackPlan, cardFontsReady } from '../utils/measureCardPlan'
 
 const SIZES = [
   { id: '4x6', label: '4×6 recipe card', hint: 'Fits a classic recipe box' },
@@ -143,16 +143,53 @@ export default function CardStudio({ recipe, onClose }) {
 
   useEffect(() => {
     let cancelled = false
+    let fontsListener = null
+    let fontTimer = null
     const draft = planRecipeCard(recipe, { size })
     setPlan(draft)
     setPageIndex(0)
     setRefining(true)
 
-    measureAndPackPlan(recipe, { size, style })
-      .then((measured) => {
-        if (cancelled) return
+    const runMeasure = () =>
+      measureAndPackPlan(recipe, { size, style }).then((measured) => {
+        if (cancelled) return null
         setPlan(measured)
-        setRefining(false)
+        return measured
+      })
+
+    runMeasure()
+      .then((measured) => {
+        if (cancelled || !measured) return
+
+        if (cardFontsReady() || !document.fonts) {
+          setRefining(false)
+          return
+        }
+
+        // Fonts still settling — keep refining and remasure once ready
+        // (this is why toggling size used to "fix" the sparse first pass).
+        let finished = false
+        const finish = () => {
+          if (cancelled || finished) return
+          finished = true
+          if (fontTimer) window.clearTimeout(fontTimer)
+          if (fontsListener && document.fonts?.removeEventListener) {
+            document.fonts.removeEventListener('loadingdone', fontsListener)
+            fontsListener = null
+          }
+          runMeasure()
+            .then(() => {
+              if (!cancelled) setRefining(false)
+            })
+            .catch(() => {
+              if (!cancelled) setRefining(false)
+            })
+        }
+
+        fontTimer = window.setTimeout(finish, 2000)
+        document.fonts.ready.then(finish).catch(finish)
+        fontsListener = finish
+        document.fonts.addEventListener?.('loadingdone', finish)
       })
       .catch((err) => {
         console.warn('Card measure failed', err)
@@ -161,6 +198,10 @@ export default function CardStudio({ recipe, onClose }) {
 
     return () => {
       cancelled = true
+      if (fontTimer) window.clearTimeout(fontTimer)
+      if (fontsListener && document.fonts?.removeEventListener) {
+        document.fonts.removeEventListener('loadingdone', fontsListener)
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recipeContentKey, size, style])
