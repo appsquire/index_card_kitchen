@@ -1,7 +1,15 @@
 import axios from 'axios'
 
+// Runtime hostname detection for production API URL
+const API_URL = (() => {
+  if (typeof window !== 'undefined' && window.location.hostname === 'index-card-kitchen.onrender.com') {
+    return 'https://indexcardkitchen-api.onrender.com/api'
+  }
+  return '/api'
+})()
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_URL,
 })
 
 // Add auth token to requests
@@ -63,6 +71,12 @@ export const recipeApi = {
   // Import from URL
   async importFromUrl(url) {
     const { data } = await api.post('/recipes/import', { url })
+    return data
+  },
+
+  // Import from pasted HTML (fallback for blocked sites)
+  async importFromHtml(html, sourceUrl = '') {
+    const { data } = await api.post('/recipes/import-html', { html, sourceUrl })
     return data
   },
 
