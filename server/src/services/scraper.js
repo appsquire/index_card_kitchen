@@ -24,7 +24,9 @@ export async function scrapeRecipe(url) {
   recipeData = parseHtml(html, url)
 
   if (!recipeData?.title) {
-    throw new Error('Could not extract recipe data from this URL')
+    throw new Error(
+      'Could not extract recipe data from this URL. Try Paste HTML — open the recipe in your browser, View Page Source, and paste it.'
+    )
   }
 
   return recipeData
@@ -80,7 +82,7 @@ async function fetchHtmlWithBrowser(url) {
   }
 }
 
-function parseHtml(html, url) {
+export function parseHtml(html, url) {
   if (!html) return null
 
   const $ = cheerio.load(html)

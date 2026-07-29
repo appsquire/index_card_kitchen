@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { query } from '../db/index.js'
 import { authenticate } from '../middleware/auth.js'
-import { scrapeRecipe } from '../services/scraper.js'
+import { scrapeRecipe, parseHtml } from '../services/scraper.js'
 import { generateRecipePdf } from '../services/pdfGenerator.js'
 
 const router = Router()
@@ -19,7 +19,8 @@ router.post('/import', async (req, res, next) => {
 
     if (!recipeData) {
       return res.status(400).json({
-        message: 'Could not extract recipe data from this URL',
+        message:
+          'Could not extract recipe data from this URL. Try Paste HTML instead — open the recipe in your browser, View Page Source, and paste it here.',
       })
     }
 
@@ -37,6 +38,32 @@ router.post('/import', async (req, res, next) => {
     }
     return res.status(400).json({
       message: error.message || 'Failed to import recipe',
+    })
+  }
+})
+
+// Import from pasted HTML - fallback when URL scraping is blocked
+router.post('/import-html', async (req, res) => {
+  try {
+    const { html, sourceUrl } = req.body
+
+    if (!html) {
+      return res.status(400).json({ message: 'HTML content is required' })
+    }
+
+    const recipeData = parseHtml(html, sourceUrl || '')
+
+    if (!recipeData?.title) {
+      return res.status(400).json({
+        message: 'Could not extract recipe data from this HTML. Make sure you copied the full page source.',
+      })
+    }
+
+    res.json(recipeData)
+  } catch (error) {
+    console.error('HTML import error:', error)
+    return res.status(400).json({
+      message: error.message || 'Failed to parse recipe from HTML',
     })
   }
 })

@@ -287,9 +287,8 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.18in 0.22in;
-  align-items: stretch;
+  align-items: start;
   height: 100%;
-  min-height: 0;
 }
 
 .recipe-index-card--letter .recipe-index-card__body--split {
@@ -299,8 +298,6 @@
 .recipe-index-card__pane {
   min-width: 0;
   min-height: 0;
-  height: 100%;
-  overflow: hidden;
 }
 
 .recipe-index-card__block h2 {
@@ -1536,12 +1533,18 @@
 
 .add-mode-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 0.5rem;
   padding: 0.35rem;
   background: rgba(255, 254, 250, 0.9);
   border: 2px solid #c5d9d0;
   border-radius: 12px;
+}
+
+@media (min-width: 640px) {
+  .add-mode-tabs {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
 }
 
 .add-mode-tabs__btn {
